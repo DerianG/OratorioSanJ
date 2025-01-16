@@ -1,0 +1,77 @@
+<h1>Administrador</h1>
+<div class="container-fluid">
+  <div class="card-body bg-dark">
+    <div class="container text-center">
+
+      <!-- Menú de botones -->
+      <div class="d-flex flex-row flex-wrap justify-content-between gap-3 ">
+        <!-- Periodos -->
+        <div class="flex-grow-1 mt-4">
+          <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('periodos')">
+            <img src="periodosIcon.png" class="img-fluid mb-2" width="80" alt="Periodos">
+            <div>Periodos</div>
+          </button>
+        </div>
+      
+        <!-- Usuarios -->
+        <div class="flex-grow-1 mt-4">
+          <button type="button" class="btn btn-warning w-100 text-center py-3" (click)="cambiarVista('usuarios')">
+            <img src="usuario.png" class="img-fluid mb-2" width="80" alt="Usuario">
+            <div>Usuario</div>
+          </button>
+        </div>
+      
+        <!-- Matrículas -->
+        <div class="flex-grow-1 mt-4">
+          <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('matricula')">
+            <img src="matricula.png" class="img-fluid mb-2" width="80" alt="Matriculas">
+            <div>Matriculas</div>
+          </button>
+        </div>
+      
+        <!-- Cursos -->
+        <div class="flex-grow-1 mt-4">
+          <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('cursos')">
+            <img src="cursos.png" class="img-fluid mb-2" width="80" alt="Cursos">
+            <div>Cursos</div>
+          </button>
+        </div>
+      
+        <!-- Configuración -->
+        <div class="flex-grow-1 mt-4">
+          <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('configuracion')">
+            <img src="configuracion.png" class="img-fluid mb-2" width="80" alt="Configuración">
+            <div>Configuración</div>
+          </button>
+        </div>
+      </div>
+      
+
+      <!-- Contenido dinámico del formulario -->
+      <div class="row justify-content-between">
+        <div class="container-fluid">
+          <p class="text-light">Formulario</p>
+          <div class="container-fluid mt-2 mb-2">
+            <!-- Mostrar el formulario solo si la vista seleccionada es "usuarios" -->
+            <div *ngIf="vistaSeleccionada === 'usuarios'">
+              <app-formulariousuarios></app-formulariousuarios>
+            </div>
+
+            <!-- Aquí puedes agregar más contenido si la vista seleccionada es "periodos" o "configuracion" -->
+            <div *ngIf="vistaSeleccionada === 'periodos'">
+              <app-formularioperiodos></app-formularioperiodos>
+            </div>
+
+            <div *ngIf="vistaSeleccionada === 'matricula'">
+              <app-formulariosmatriculas></app-formulariosmatriculas>
+            </div>
+            <div *ngIf="vistaSeleccionada === 'cursos'">
+              <app-formularioscursos></app-formularioscursos>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -8,7 +8,16 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-      <ul class="navbar-nav nav-underline">
+      <ul class="navbar-nav nav-underline"> 
+        <li class="nav-item"  *ngIf="isLoggedIn && userRole === 'secretario'" >
+          <a class="nav-link" routerLink="Users/Secretario" routerLinkActive="">Gestion</a>
+        </li>
+        <li class="nav-item"  *ngIf="isLoggedIn && userRole === 'profesor'" >
+          <a class="nav-link" routerLink="Users/Profesores" routerLinkActive="">Gestion</a>
+        </li>
+        <li class="nav-item"  *ngIf="isLoggedIn && userRole === 'administrador'" >
+          <a class="nav-link" routerLink="Users/Administrador" routerLinkActive="">Gestion</a>
+        </li>
         <li class="nav-item">
           <a class="nav-link " aria-current="page" routerLink="" routerLinkActive="">Inicio</a>
         </li>
@@ -18,9 +27,16 @@
         <li class="nav-item">
           <a class="nav-link" routerLink="info/actividades" routerLinkActive="">Actividades</a>
         </li>
-        <li class="nav-item">
+        <li *ngIf="isLoggedIn" class="nav-item">
+          <span class="nav-link">Bienvenido, {{ user.email }}</span>
+        </li>
+        <li *ngIf="isLoggedIn" class="nav-item">
+          <button class="btn btn-success" (click)="logout()">Cerrar sesión</button>
+        </li>
+        <li *ngIf="!isLoggedIn" class="nav-item">
           <a class="nav-link" routerLink="info/ingreso" routerLinkActive="">Ingreso</a>
         </li>
+        
       </ul>
     </div>
   </div>

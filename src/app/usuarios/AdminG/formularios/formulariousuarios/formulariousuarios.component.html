@@ -1,0 +1,294 @@
+<div class="container mt-4 " >
+  <!-- Botón Crear (se encuentra arriba de la tabla) -->
+
+  <!-- Card para el Formulario -->
+  <div class="text-end mb-3">
+    <button 
+    class="btn" 
+    [ngClass]="{ 'btn-success': !mostrarForm, 'btn-danger': mostrarForm }" 
+    (click)="mostrarFormulario()">
+    {{ mostrarForm ? 'Cancelar' : (modoEdicion ? 'Modificar Usuario' : 'Crear Usuario') }}
+   </button>
+  </div>
+
+  <!-- Card para el Formulario -->
+  <div class="card shadow-sm" *ngIf="mostrarForm">
+    <div class="card-header text-center bg-primary text-white">
+      <h4>{{ modoEdicion ? 'Modificar Usuario' : 'Registro de Usuario' }}</h4>
+    </div>
+    <div class="card-body">
+      <!-- Formulario de Registro -->
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <!-- Fila con columnas separadas -->
+        <div class="row">
+          <!-- Columna izquierda con campos generales -->
+          <div class="col-md-8">
+            <!-- Campos de Nombre, Cédula, Email, Teléfono, Contraseña y Confirmar Contraseña -->
+            <div class="row mb-3">
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="nombre" class="form-label mb-0">Nombre</label>
+              </div>
+              <div class="col-md-8">
+                <input type="text" class="form-control" id="nombre" formControlName="nombre" placeholder="Ingrese su nombre" required />
+                <div *ngIf="isRequiredNombre">
+                  <small class="text-danger">Campo obligatorio.</small>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="apellido" class="form-label mb-0">Apellido</label>
+              </div>
+              <div class="col-md-8">
+                <input type="text" class="form-control" id="apellido" formControlName="apellido" placeholder="Ingrese su apellido" required />
+                <div *ngIf="isRequiredApellido ">
+                  <small class="text-danger">Campo obligatorio.</small>
+                </div>
+              </div>
+            </div>
+  
+            <div class="row mb-3">
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="cedula" class="form-label mb-0">Cédula</label>
+              </div>
+              <div class="col-md-8">
+                <input type="text" class="form-control" id="cedula" formControlName="cedula" placeholder="Ingrese su cédula (10 dígitos)" required maxlength="10" (input)="filterNumbers($event)" />
+                <div *ngIf="isRequiredCedula">
+                  <small class="text-danger">Campo obligatorio.</small>
+                </div>
+                <div *ngIf="isCedulaInvalid">
+                  <small class="text-danger">La cédula debe tener 10 dígitos.</small>
+                </div>
+              </div>
+            </div>
+  
+          <div class="row mb-3">
+            <div class="col-md-4 d-flex align-items-center">
+              <label for="email" class="form-label mb-0">Correo Electrónico</label>
+            </div>
+            <div class="col-md-8">
+              <input 
+                type="email" 
+                class="form-control" 
+                id="email" 
+                formControlName="email" 
+                placeholder="Ingrese su correo electrónico" 
+                required 
+                (ngModelChange)="onEmailChange()"
+              />
+              <div *ngIf="isRequiredField">
+                <small class="text-danger">Campo obligatorio.</small>
+              </div>
+              <div *ngIf="isEmailInvalid">
+                <small class="text-danger">El correo electrónico debe ser válido.</small>
+              </div>
+              <div *ngIf="emailExiste">
+                <small class="text-danger">El email ya existe.</small>
+              </div>
+            </div>
+          </div>
+
+                      <!-- Fecha de nacimiento -->
+            <div class="mb-3 row" >
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="fechanacimiento" class="form-label mb-0">Fecha nacimiento</label>
+              </div>
+              <div class="col-md-8">
+                <input type="date" class="form-control" id="fechanacimiento" formControlName="fechanacimiento" required />
+              </div>
+            </div>
+
+  
+            <div class="row mb-3">
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="telefono" class="form-label mb-0">Teléfono (opcional)</label>
+              </div>
+              <div class="col-md-8">
+                <input type="text" class="form-control" id="telefono" formControlName="telefono" placeholder="Ingrese su teléfono (opcional)" maxlength="10" (input)="filterNumbers($event)" />
+                <div *ngIf="isTelefonoInvalid">
+                  <small class="text-danger">El teléfono debe tener 10 dígitos.</small>
+                </div>
+              </div>
+            </div>
+  
+            <div class="row mb-3">
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="contraseña" class="form-label mb-0">Contraseña</label>
+              </div>
+              <div class="col-md-8">
+                <div class="input-group">
+                  <!-- Campo de la contraseña -->
+                  <input [type]="passwordVisible ? 'text' : 'password'" class="form-control" id="contraseña" formControlName="contraseña" placeholder="Ingrese su contraseña" required />
+                  <!-- Icono de visibilidad de la contraseña -->
+                  <span class="input-group-text" (click)="togglePasswordVisibility()">
+                    <img [src]="passwordVisible ? 'contraseña.png' : 'nocontraseña.png'" alt="icono contraseña" width="20" />
+                  </span>
+                </div>
+                <!-- Mensajes de error -->
+                <div class="form-text">
+                  <small *ngIf="isPasswordInvalid" class="text-danger">La contraseña debe tener al menos 6 caracteres.</small>
+                  <small *ngIf="isRequiredPassword" class="text-danger">Campo obligatorio.</small>
+                  <small *ngIf="form.get('rol')?.value === 'alumno'" class="text-info">La cédula se asignará como contraseña automáticamente para este rol.</small>
+                </div>
+              </div>
+            </div>
+  
+            <div class="row mb-3">
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="confirmContraseña" class="form-label mb-0">Confirmar Contraseña</label>
+              </div>
+              <div class="col-md-8">
+                <input [type]="passwordVisible ? 'text' : 'password'" class="form-control" id="confirmContraseña" formControlName="confirmContraseña" placeholder="Confirme su contraseña" required />
+                <div *ngIf="isPasswordMismatch">
+                  <small class="text-danger">Las contraseñas no coinciden.</small>
+                </div>
+                <div *ngIf="isRequiredConfirmPassword">
+                  <small class="text-danger">Campo obligatorio.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Columna derecha con Rol y Estado -->
+          <div class="col-md-4">
+            <div class="row mb-3">
+              <div class="col-md-12 d-flex align-items-center">
+                <label for="rol" class="form-label mb-0">Rol</label>
+              </div>
+              <div class="col-md-12">
+                <select class="form-select" id="rol" formControlName="rol">
+                  <option value="alumno">Alumno</option>
+                  <option value="administrador">Administrador</option>
+                  <option value="profesor">Profesor</option>
+                  <option value="secretario">Secretario</option>
+                </select>
+              </div>
+            </div>
+            
+  
+            <div class="row mb-3">
+              <div class="col-md-12 d-flex align-items-center">
+                <label for="estado" class="form-label mb-0">Estado</label>
+              </div>
+              <div class="col-md-12">
+                <select class="form-select" id="estado" formControlName="estado">
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Botón de Enviar -->
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary" [disabled]="form.invalid || emailExiste">
+            {{ modoEdicion ? 'Guardar' : 'Registrar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<!-- Card para la Tabla de Usuarios -->
+<div class="card shadow-sm mt-4">
+  <div class="card-header text-center bg-primary text-white">
+    <h4>Lista de Usuarios</h4>
+  </div>
+  <div class="card-body">
+    <!-- Filtros de búsqueda -->
+    <div class="mb-3 d-flex justify-content-between">
+      <div class="me-2" style="flex: 1 1 75%; max-width: 75%;">
+        <input 
+          type="text" 
+          id="valorFiltro" 
+          class="form-control" 
+          [(ngModel)]="valorFiltro" 
+          (input)="filtrarUsuarios()" 
+          [placeholder]="placeholder"  
+          [disabled]="campoFiltro === 'rol' || campoFiltro === 'estado'"  
+        />
+      </div>
+      <div class="ms-2" style="flex: 1 1 25%; max-width: 25%;">
+        <div class="d-flex align-items-center">
+          <label for="campoFiltro" class="form-label me-2 mb-0"> Filtro:</label>
+          <select class="form-select" id="campoFiltro" [(ngModel)]="campoFiltro" (change)="actualizarPlaceholder(); filtrarUsuarios()">
+            <!-- Solo permitir seleccionar el filtro por rol si el usuario no es secretario -->
+            <option *ngIf="!isSecretario" value="rol">Rol</option>
+            <option value="nombre">Nombre</option>
+            <option value="email">Correo</option>
+            <option value="cedula">Cédula</option>
+            <option value="estado">Estado</option>
+          </select>
+        </div>
+      </div>
+    
+      <!-- Filtro por rol/estado -->
+      <div *ngIf="campoFiltro === 'rol' || campoFiltro === 'estado'" style="flex: 1 1 25%; max-width: 25%;">
+        <div class="d-flex align-items-center">
+          <label for="campoFiltro2" class="form-label me-2 mb-0">{{ campoFiltro === 'rol' ? 'Selecciona un rol' : 'Selecciona un estado' }}:</label>
+          <select class="form-select" id="campoFiltro2" [(ngModel)]="valorFiltro2" (change)="filtrarUsuarios()">
+            <option *ngIf="campoFiltro === 'rol' && !isSecretario" value="alumno">Alumno</option>
+            <option *ngIf="campoFiltro === 'rol' && !isSecretario" value="administrador">Administrador</option>
+            <option *ngIf="campoFiltro === 'rol' && !isSecretario" value="profesor">Profesor</option>
+            <option *ngIf="campoFiltro === 'rol' && !isSecretario" value="secretario">Secretario</option>
+            <option *ngIf="campoFiltro === 'estado'" value="activo">Activo</option>
+            <option *ngIf="campoFiltro === 'estado'" value="inactivo">Inactivo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tabla de Usuarios -->
+    <div class="table-responsive">
+      <table class="table table-striped table-bordered w-100">
+        <thead class="table-primary">
+          <tr>
+            <th>Acciones</th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Cédula</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <!-- Mostrar las columnas solo si el rol seleccionado es 'alumno' -->
+            <th>Fecha de Nacimiento</th>
+          
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let usuario of usuariosFiltrados">
+            <td>
+              <div class="d-flex gap-2">
+                <button class="btn btn-warning btn-sm flex-fill" (click)="editarUsuario(usuario)">Modificar</button>
+                <button class="btn btn-danger btn-sm flex-fill" (click)="eliminarUsuario(usuario.id)">Eliminar</button>
+              </div>
+            </td>
+            <td>{{ usuario.id }}</td>
+            <td>{{ usuario.nombre }}</td>
+            <td>{{ usuario.apellido }}</td>
+            <td>{{ usuario.cedula }}</td>
+            <td>{{ usuario.email }}</td>
+            <td>{{ usuario.telefono }}</td>
+            <td>{{ usuario.role }}</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                  'bg-success':  usuario.estado === 'activo', 
+                  'bg-danger':  usuario.estado === 'inactivo'
+              }">
+                  {{ usuario.estado }}
+              </span>
+            </td>
+            <!-- Mostrar los datos solo si el rol es 'alumno' -->
+            <td>{{ usuario.fechaNacimiento?.toDate() | date: 'dd/MM/yyyy' }}</td>
+           
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div>

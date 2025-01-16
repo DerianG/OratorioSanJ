@@ -1,0 +1,183 @@
+<div class="container mt-4">
+    <!-- Botón para crear o cancelar -->
+    <div class="text-end mb-3">
+        <button 
+            class="btn" 
+            [ngClass]="{ 'btn-success': !mostrarForm, 'btn-danger': mostrarForm }" 
+            (click)="mostrarFormulario()">
+            {{ mostrarForm ? 'Cancelar' : (modoEdicion ? 'Modificar Período' : 'Crear Período') }}
+        </button>
+    </div>
+
+    <!-- Card para el Formulario -->
+    <div class="card shadow-sm" *ngIf="mostrarForm">
+        <div class="card-header text-center bg-primary text-white">
+        <h4>{{ modoEdicion ? 'Modificar Período' : 'Registrar Período' }}</h4>
+        </div>
+        <div class="card-body">
+        <!-- Formulario de Registro -->
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <div class="row">
+            <!-- Sección Izquierda -->
+            <div class="col-md-8">
+                <!-- Campo Nombre -->
+                <div class="mb-3 row">
+                <label for="nombre" class="col-md-4 col-form-label">Nombre</label>
+                <div class="col-md-8">
+                    <input type="text" class="form-control" id="nombre" formControlName="nombre" placeholder="Ingrese el nombre del periodo" required />
+                    <div *ngIf="isRequiredNombre">
+                    <small class="text-danger">El nombre es obligatorio.</small>
+                    </div>
+                    <div *ngIf="isValidNombre">
+                    <small class="text-danger">El nombre debe tener al menos 4 caracteres.</small>
+                    </div>
+                </div>
+                </div>
+    
+                <!-- Campos Fecha y Estado -->
+                <div class="mb-3 row">
+                <label for="fechaInicio" class="col-md-4 col-form-label">Fecha de Inicio</label>
+                <div class="col-md-8">
+                    <input type="date" class="form-control" id="fechaInicio" formControlName="fechaInicio" required />
+                </div>
+                </div>
+    
+                <div class="mb-3 row">
+                <label for="fechaFin" class="col-md-4 col-form-label">Fecha de Fin</label>
+                <div class="col-md-8">
+                    <input type="date" class="form-control" id="fechaFin" formControlName="fechaFin" required />
+                </div>
+                </div>
+    
+                <div class="mb-3 row">
+                <label for="estado" class="col-md-4 col-form-label">Estado</label>
+                <div class="col-md-8">
+                    <select class="form-select" id="estado" formControlName="estado" required>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                    </select>
+                </div>
+                </div>
+            </div>
+    
+            <!-- Sección Derecha (Lista de Niveles) -->
+            <div class="col-md-4">
+                <h5>Seleccione los niveles:</h5>
+                
+                <!-- Cuadro para la Lista de Niveles -->
+                <div class="border p-3 rounded-3 bg-light mb-3" *ngIf="nivelesDisponibles.length > 0; else cargandoNiveles">
+                <div *ngFor="let nivel of nivelesDisponibles" class="form-check">
+                    <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="nivel-{{ nivel.id }}"
+                    [checked]="isNivelSeleccionado(nivel.id)"
+                    (change)="toggleNivelSeleccionado(nivel)"
+                    />
+                    <label class="form-check-label" for="nivel-{{ nivel.id }}">
+                    {{ nivel.nombre }}
+                    </label>
+                </div>
+                </div>
+    
+                <!-- Mensaje mientras se cargan los niveles -->
+                <ng-template #cargandoNiveles>
+                <p>Cargando niveles...</p>
+                </ng-template>
+    
+                <!-- Mensaje de validación si no se selecciona un nivel -->
+                <div *ngIf="form.touched && nivelesSeleccionados.invalid" class="text-danger">
+                Debe seleccionar al menos un nivel.
+                </div>
+            </div>
+            </div>
+    
+            <!-- Botón de Enviar -->
+            <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary" [disabled]="form.invalid || nivelesSeleccionados.value.length === 0">
+                {{ modoEdicion ? 'Guardar' : 'Registrar' }}
+            </button>
+            </div>
+        </form>
+        </div>
+    </div>
+    
+
+    <!-- Mostrar Períodos -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header text-center bg-primary text-white">
+            <h4>Lista de Períodos</h4>
+        </div>
+        <div class="card-body">
+            <!-- Filtros de búsqueda -->
+            <div class="mb-3 d-flex justify-content-between">
+                <div class="me-2" style="flex: 1 1 75%; max-width: 75%;">
+                    <input 
+                        type="text" 
+                        id="valorFiltro" 
+                        class="form-control" 
+                        [(ngModel)]="valorFiltro" 
+                        (input)="filtrarPeriodos()" 
+                        [placeholder]="placeholder" 
+                    />
+                </div>
+                <div class="ms-2" style="flex: 1 1 25%; max-width: 25%;">
+                    <div class="d-flex align-items-center">
+                        <label for="campoFiltro" class="form-label me-2 mb-0">Filtro:</label>
+                        <select class="form-select" id="campoFiltro" [(ngModel)]="campoFiltro" (change)="actualizarPlaceholder(); filtrarPeriodos()">
+                            <option value="nombre">Nombre</option>
+                            <option value="estado">Estado</option>
+                            <option value="fechaInicio">Fecha Inicio</option>
+                            <option value="fechaFin">Fecha Fin</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Períodos -->
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered w-100">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let periodo of periodosFiltrados">
+                            <td>{{ periodo.nombre }}</td>
+                            <td>{{ periodo.fechaInicio.toDate() | date }}</td>
+                            <td>{{ periodo.fechaFin.toDate() | date }}</td>
+                            <td>
+                                <span class="badge" [ngClass]="{
+                                    'bg-success':  periodo.estado === 'activo', 
+                                    'bg-danger':  periodo.estado === 'inactivo'
+                                }"> 
+                                    {{  periodo.estado }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" (click)="editarPeriodo(periodo)">Modificar</button>
+                                <button class="btn btn-danger btn-sm me-2" (click)="eliminarPeriodo(periodo.id, periodo.nombre)">Eliminar</button>
+                                <button class="btn btn-info btn-sm" (click)="verDetalle(periodo)">Detalle</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+        </div>
+    </div>
+
+    <app-formularioniveles 
+    *ngIf="detalleSeleccionado" 
+    [detalle]="detalleSeleccionado" 
+    [niveles]="detalleSeleccionado.niveles" 
+    (detalleOcultado)="ocultarDetalle()">
+  </app-formularioniveles>
+   
+ 
+</div>

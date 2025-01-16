@@ -1,0 +1,32 @@
+<div class="card mt-4">
+  <div class="card-header bg-secondary text-white d-flex justify-content-between">
+    <h5>Detalle del Período: {{ detalle.nombre }}</h5>
+    <button class="btn btn-sm btn-danger" (click)="ocultarDetalle()">Cerrar</button>
+  </div>
+  <div class="card-body">
+    <p><strong>Fecha Inicio:</strong> {{ detalleConvertido.fechaInicio | date }}</p>
+    <p><strong>Fecha Fin:</strong> {{ detalleConvertido.fechaFin | date }}</p>
+    <p><strong>Estado:</strong> {{ detalle.estado }}</p>
+
+    <h6 class="mt-4">Niveles Asociados:</h6>
+     <!-- Tabla de Niveles -->
+     <table class="table table-bordered table-striped">
+      <thead class="table-primary">
+        <tr>
+          <th scope="col">Nivel</th>
+          <th scope="col">Paralelos</th>
+          <th scope="col">Estudiantes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let nivel of niveles">
+          <td>{{ nivel.nombre }}</td>
+          <!-- Columna de Paralelos (con valor 0) -->
+          <td>{{ nivel.paralelos || 0 }}</td>
+          <!-- Columna de Estudiantes (con valor 0) -->
+          <td>{{ nivel.estudiantes || 0 }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
