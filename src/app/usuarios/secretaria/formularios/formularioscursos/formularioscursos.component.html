@@ -1,11 +1,11 @@
 <div class="container-fluid" style="display: flex; flex-direction: row; height: 100vh; margin: 0; padding: 0;">
   <!-- Panel izquierdo: Períodos -->
-  <div 
+  <div
     style="width: 35%; max-width: 400px; background-color: #f8f9fa; padding: 16px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); overflow-y: auto;">
     <h4 style="text-align: center; color: #0d6efd; margin-bottom: 16px;">Períodos Activos</h4>
     <div>
       <div *ngFor="let periodo of periodosActivos">
-        <button 
+        <button
           type="button"
           (click)="seleccionarPeriodo(periodo)"
           [ngStyle]="{
@@ -23,10 +23,11 @@
           {{ periodo.nombre }}
         </button>
 
+
         <!-- Lista de Niveles del Período Seleccionado -->
-        <div *ngIf="periodoSeleccionado?.id === periodo.id && nivelesVisible && niveles.length > 0" 
+        <div *ngIf="periodoSeleccionado?.id === periodo.id && nivelesVisible && niveles.length > 0"
           style="margin-left: 8px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
-          <button 
+          <button
             *ngFor="let nivel of niveles"
             (click)="seleccionarNivel(nivel)"
             [ngStyle]="{
@@ -45,13 +46,14 @@
     </div>
   </div>
 
+
   <!-- Panel derecho: Paralelos -->
   <div style="flex-grow: 1; padding: 16px; background-color: #ffffff; overflow-y: auto;">
     <!-- Paralelos -->
     <div *ngIf="nivelesVisible && nivelSeleccionado && paralelos.length > 0" style="margin-top: 24px;">
       <h4 style="color: #ffc107;">Paralelos del Nivel: {{ nivelSeleccionado?.nombre }}</h4>
       <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;">
-        <button 
+        <button
           *ngFor="let paralelo of paralelos"
           (click)="seleccionarParalelo(paralelo)"
           [ngStyle]="{
@@ -60,137 +62,140 @@
             border: paraleloSeleccionado?.id === paralelo.id ? '1px solid #ffc107' : '1px solid #ffc107',
             borderRadius: '4px',
             padding: '8px 16px',
-            fontSize: '0.9rem', 
+            fontSize: '0.9rem',
             cursor: 'pointer'
           }">
           {{ paralelo.nombre }}
         </button>
       </div>
       <!-- Campo para mostrar la cantidad de docentes -->
-      <div class="card shadow-sm mt-4">
-        <div class="card-header text-center bg-secondary text-white">
-            <h4 >Docentes</h4>     
-        </div>
-      <!-- Card para el agregar docente -->
-        <div class="card-body">
-          <div class="mb-3  justify-content-between align-items-center">
-            <div class="form-group mb-3  justify-content-between">
-                  <div class="mb-3 d-flex justify-content-between">
-                      <div class="me-2" style="flex: 1 1 85%; max-width: 85%;">
-                        <input
-                          type="text"
-                          id="docenteInput"
-                          class="form-control"
-                          placeholder="Ingrese nombre para agregar docente al paralelo"
-                          [value]="docenteSeleccionado?.nombre || ''"
-                          (input)="filtrarDocentes($event)"
-                          (focus)="onFocus()"
-                          (blur)="ocultarSugerencias()"
-                          autocomplete="off"
-                        />
-                      </div>
-                      <div class="ms-2" style="flex: 1 1 15%; max-width: 15%;" *ngIf="docenteSeleccionado">
-                        <div class="d-flex align-items-center justify-content-between">
-                          <button class="btn btn-danger me-2 mb-0" (click)="cancelarSeleccion()">Cancelar</button>
-                        </div>
-                      </div>
-                  </div>
-                <!-- Lista de sugerencias -->
-                <div *ngIf="mostrarSugerencias && usuariosFiltrados3.length > 0" class="list-group mt-2">
-                  <a
-                    href="javascript:void(0)"
-                    class="list-group-item list-group-item-action"
-                    *ngFor="let docente of usuariosFiltrados3"
-                    (click)="seleccionarDocente(docente)"
-                  >
-                    {{ docente.nombre }} {{ docente.apellido }} - {{ docente.cedula }}
-                  </a>
-                </div>
-
-                <!-- Mensaje cuando no hay sugerencias -->
-                <div *ngIf="mostrarSugerencias && usuariosFiltrados3.length === 0" class="list-group mt-2">
-                  <div class="list-group-item text-muted">No hay resultados</div>
-                </div>
-            </div>
-            <!-- Mostrar Información del Alumno Seleccionado -->
-            <div class="card mt-2" *ngIf="docenteSeleccionado">
-              <div class="card-header bg-secondary text-white">
-                  <h5 class="mb-0 d-flex align-items-center">
-                      <i class="bi bi-person-circle me-2"></i> Información del docente
-                  </h5>
-              </div>
-              <div class="card-body">
-                <div class="row">
-                    <!-- Primera columna: 60% del ancho -->
-                    <div class="col-md-7">
-                        <div class="mb-2 row align-items-center">
-                            <label class="col-sm-4 text-start fw-bold"><i class="bi bi-person-fill me-2 text-secondary"></i>Nombre:</label>
-                            <div class="col-sm-8 text-start">{{ docenteSeleccionado?.nombre }}</div>
-                        </div>
-                        <div class="mb-2 row align-items-center">
-                            <label class="col-sm-4 text-start fw-bold"><i class="bi bi-envelope-fill me-2 text-secondary"></i>Correo:</label>
-                            <div class="col-sm-8 text-start">{{ docenteSeleccionado?.email }}</div>
-                        </div>
-                    </div>
-        
-                    <!-- Segunda columna: 40% del ancho -->
-                    <div class="col-md-5">
-                        <div class="mb-2 row align-items-center">
-                            <label class="col-sm-4 text-start fw-bold"><i class="bi bi-person-badge me-2 text-secondary"></i>Apellido:</label>
-                            <div class="col-sm-8 text-start">{{ docenteSeleccionado?.apellido }}</div>
-                        </div>
-                        <div class="mb-2 row align-items-center">
-                          <label class="col-sm-4 text-start fw-bold"><i class="bi bi-credit-card me-2 text-secondary"></i>Cédula:</label>
-                          <div class="col-sm-8 text-start">{{ docenteSeleccionado?.cedula }}</div>
-                      </div>
-                    </div>
-                </div>
-                <div class="ms-2" *ngIf="docenteSeleccionado">
-                  <div class="d-flex align-items-center justify-content-between">
-                    <button class="btn btn-success me-2 mb-0" (click)="asignarDocente()">Asignar</button>
-                  </div>
-                </div>
-            </div>    
-                    
-            </div>   
-                  
-         </div>
-          
-      <!-- Card para la Tabla de docentes-->
-      <div class="table-responsive">
-            <table class="table table-striped table-bordered w-100">
-              <thead class="table-primary">
-                <tr>        
-                  <th>Nombre</th>
-                  <th>Apellido</th>
-                  <th>Cédula</th>
-                  <th>Correo</th>
-                  <th>Teléfono</th>           
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let docente of docentesFiltrados">
-                  <td>{{ docente.nombre }}</td>
-                  <td>{{ docente.apellido }}</td>
-                  <td>{{ docente.cedula }}</td>
-                  <td>{{ docente.email }}</td>
-                  <td>{{ docente.telefono }}</td>
-                  <td>
-                    <div class="d-flex gap-1">
-                        <button class="btn btn-danger btn-sm flex-fill" (click)="quitarDocente(docente.id)">Quitar</button>                 
-                    </div>
-                </td>
-                </tr>
-              </tbody>
-            </table>
+      <div *ngIf="!isDocente">
+        <div class="card shadow-sm mt-4">
+          <div class="card-header text-center bg-secondary text-white">
+              <h4 >Docentes</h4>    
           </div>
-        </div>
-      </div>    
+        <!-- Card para el agregar docente -->
+          <div class="card-body">
+            <div class="mb-3  justify-content-between align-items-center">
+              <div class="form-group mb-3  justify-content-between">
+                    <div class="mb-3 d-flex justify-content-between">
+                        <div class="me-2" style="flex: 1 1 85%; max-width: 85%;">
+                          <input
+                            type="text"
+                            id="docenteInput"
+                            class="form-control"
+                            placeholder="Ingrese nombre para agregar docente al paralelo"
+                            [value]="docenteSeleccionado?.nombre || ''"
+                            (input)="filtrarDocentes($event)"
+                            (focus)="onFocus()"
+                            (blur)="ocultarSugerencias()"
+                            autocomplete="off"
+                          />
+                        </div>
+                        <div class="ms-2" style="flex: 1 1 15%; max-width: 15%;" *ngIf="docenteSeleccionado">
+                          <div class="d-flex align-items-center justify-content-between">
+                            <button class="btn btn-danger me-2 mb-0" (click)="cancelarSeleccion()">Cancelar</button>
+                          </div>
+                        </div>
+                    </div>
+                  <!-- Lista de sugerencias -->
+                  <div *ngIf="mostrarSugerencias && usuariosFiltrados3.length > 0" class="list-group mt-2">
+                    <a
+                      href="javascript:void(0)"
+                      class="list-group-item list-group-item-action"
+                      *ngFor="let docente of usuariosFiltrados3"
+                      (click)="seleccionarDocente(docente)"
+                    >
+                      {{ docente.nombre }} {{ docente.apellido }} - {{ docente.cedula }}
+                    </a>
+                  </div>
+
+
+                  <!-- Mensaje cuando no hay sugerencias -->
+                  <div *ngIf="mostrarSugerencias && usuariosFiltrados3.length === 0" class="list-group mt-2">
+                    <div class="list-group-item text-muted">No hay resultados</div>
+                  </div>
+              </div>
+              <!-- Mostrar Información del Alumno Seleccionado -->
+              <div class="card mt-2" *ngIf="docenteSeleccionado">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-circle me-2"></i> Información del docente
+                    </h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                      <!-- Primera columna: 60% del ancho -->
+                      <div class="col-md-7">
+                          <div class="mb-2 row align-items-center">
+                              <label class="col-sm-4 text-start fw-bold"><i class="bi bi-person-fill me-2 text-secondary"></i>Nombre:</label>
+                              <div class="col-sm-8 text-start">{{ docenteSeleccionado?.nombre }}</div>
+                          </div>
+                          <div class="mb-2 row align-items-center">
+                              <label class="col-sm-4 text-start fw-bold"><i class="bi bi-envelope-fill me-2 text-secondary"></i>Correo:</label>
+                              <div class="col-sm-8 text-start">{{ docenteSeleccionado?.email }}</div>
+                          </div>
+                      </div>
+         
+                      <!-- Segunda columna: 40% del ancho -->
+                      <div class="col-md-5">
+                          <div class="mb-2 row align-items-center">
+                              <label class="col-sm-4 text-start fw-bold"><i class="bi bi-person-badge me-2 text-secondary"></i>Apellido:</label>
+                              <div class="col-sm-8 text-start">{{ docenteSeleccionado?.apellido }}</div>
+                          </div>
+                          <div class="mb-2 row align-items-center">
+                            <label class="col-sm-4 text-start fw-bold"><i class="bi bi-credit-card me-2 text-secondary"></i>Cédula:</label>
+                            <div class="col-sm-8 text-start">{{ docenteSeleccionado?.cedula }}</div>
+                        </div>
+                      </div>
+                  </div>
+                  <div class="ms-2" *ngIf="docenteSeleccionado">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <button class="btn btn-success me-2 mb-0" (click)="asignarDocente()">Asignar</button>
+                    </div>
+                  </div>
+              </div>    
+                     
+              </div>  
+                   
+          </div>
+           
+        <!-- Card para la Tabla de docentes-->
+        <div class="table-responsive">
+              <table class="table table-striped table-bordered w-100">
+                <thead class="table-primary">
+                  <tr>        
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Cédula</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>          
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let docente of docentesFiltrados">
+                    <td>{{ docente.nombre }}</td>
+                    <td>{{ docente.apellido }}</td>
+                    <td>{{ docente.cedula }}</td>
+                    <td>{{ docente.email }}</td>
+                    <td>{{ docente.telefono }}</td>
+                    <td>
+                      <div class="d-flex gap-1">
+                          <button class="btn btn-danger btn-sm flex-fill" (click)="quitarDocente(docente.id)">Quitar</button>                
+                      </div>
+                  </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>  
+      </div>  
        <!-- Card para la Tabla de Usuarios -->
        <div *ngIf="nivelSeleccionado" class="card shadow-sm mt-4">
         <div class="card-header text-center bg-secondary text-white">
-          <h4>Lista de Alumnos</h4>
+          <h4>{{ getTituloAsistencia() }}</h4>
         </div>
         <div class="card-body">
           <!-- Filtro y contador de alumnos -->
@@ -211,9 +216,9 @@
               </div>
             </div>
           </div>
-          
          
-      
+         
+     
           <!-- Tabla de alumnos -->
           <div class="table-responsive">
             <table class="table table-striped table-bordered w-100">
@@ -221,37 +226,50 @@
                 <tr>        
                   <th>Nombre</th>
                   <th>Apellido</th>
-                  <th>Cédula</th>
-                  <th>Correo</th>
-                  <th>Teléfono</th>           
+                  <th *ngIf="!isDocente">Cédula</th>
+                  <th *ngIf="!isDocente">Correo</th>
+                  <th *ngIf="!isDocente">Teléfono</th>          
                   <th>Estado</th>
-                  <th>Fecha de Nacimiento</th>
+                  <th *ngIf="!isDocente">Fecha de Nacimiento</th>
+                  <th *ngIf="isDocente">Asistencia</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let usuario of usuariosFiltrados">
                   <td>{{ usuario.nombre }}</td>
                   <td>{{ usuario.apellido }}</td>
-                  <td>{{ usuario.cedula }}</td>
-                  <td>{{ usuario.email }}</td>
-                  <td>{{ usuario.telefono }}</td>
+                  <td *ngIf="!isDocente">{{ usuario.cedula }}</td>
+                  <td *ngIf="!isDocente">{{ usuario.email }}</td>
+                  <td *ngIf="!isDocente">{{ usuario.telefono }}</td>
                   <td>
                     <span class="badge" [ngClass]="{
-                      'bg-success': usuario.estado === 'activo', 
+                      'bg-success': usuario.estado === 'activo',
                       'bg-danger': usuario.estado === 'inactivo'
                     }">
                       {{ usuario.estado }}
                     </span>
                   </td>
-                  <td>{{ usuario.fechaNacimiento?.toDate() | date: 'dd/MM/yyyy' }}</td>
+                  <td *ngIf="!isDocente">{{ usuario.fechaNacimiento?.toDate() | date: 'dd/MM/yyyy' }}</td>
+                  <td *ngIf="isDocente">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="asistencias[usuario.id]"
+                      [ngModelOptions]="{standalone: true}"
+                    />
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
+
+
+          <div *ngIf="isDocente && usuariosFiltrados2.length > 0" class="guardar-asistencia mt-4">
+            <button class="btn btn-success" (click)="guardarAsistencia()" >Guardar Asistencia</button>
+          </div>
         </div>
       </div>
-      
-      
+     
+     
     </div>
   </div>
 </div>

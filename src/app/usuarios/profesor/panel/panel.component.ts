@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';  
-import { FormularioasistenciaComponent } from '../formularios/formularioasistencia/formularioasistencia.component';
+import { FormularioscursosComponent } from '../../secretaria/formularios/formularioscursos/formularioscursos.component';
 @Component({
   selector: 'app-panel',
   standalone: true,
-  imports: [CommonModule, FormularioasistenciaComponent],
+  imports: [CommonModule, FormularioscursosComponent],
   templateUrl: './panel.component.html',
   styles: ``
 })

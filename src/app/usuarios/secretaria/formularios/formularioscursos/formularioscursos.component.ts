@@ -41,7 +41,8 @@ export  class FormularioscursosComponent implements OnInit {
   cursosDocentes: any[] = [];//todos los cursodocentes
   docentesFiltrados: any[] = [];
   docentesFiltrados2: any[] = [];
-
+  isDocente: boolean = false; // Variable que indica si el usuario es  isDocente: boolean = false; // Variable que indica si el usuario es 
+  asistencias: { [usuarioId: string]: boolean } = {};
 
   
   constructor(
@@ -60,7 +61,8 @@ export  class FormularioscursosComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser();
     this.currentUserRole = currentUser?.role || '';
     this.isSecretario = this.currentUserRole === 'secretario';
-    
+    this.isDocente = this.currentUserRole === 'profesor';
+ 
   }
   // Cargar períodos activos desde Firestore
   async cargarPeriodosActivos(): Promise<void> {
@@ -83,7 +85,6 @@ export  class FormularioscursosComponent implements OnInit {
   
 }
   
-
 // Método para seleccionar un nivel
 // Método para seleccionar un nivel
 async seleccionarNivel(nivel: any): Promise<void> {
@@ -118,8 +119,6 @@ async seleccionarNivel(nivel: any): Promise<void> {
     this.paralelos = [];
   }
 }
-
-
  // Seleccionar periodo y mostrar/ocultar niveles
  async seleccionarPeriodo(periodo: any): Promise<void> {
   if (this.periodoSeleccionado?.id === periodo.id) {
@@ -215,7 +214,11 @@ async seleccionarNivel(nivel: any): Promise<void> {
         // Asignar los usuarios filtrados a la variable usuariosFiltrados
         this.usuariosFiltrados = usuariosMatriculados;
         this.usuariosFiltrados2 = [...this.usuariosFiltrados]; // Establecer la lista de usuarios filtrados inicial
-
+        this.usuariosFiltrados.forEach(usuario => {
+          if (this.asistencias[usuario.id] === undefined) {
+            this.asistencias[usuario.id] = true; // Por defecto, todos están "no asistieron"
+          }
+        });
     }
   
   } catch (error) {
@@ -283,6 +286,7 @@ filtrarUsuarios(): void {
   if (!valorFiltro) {
     // Si el campo de búsqueda está vacío, restaurar todos los usuarios filtrados inicialmente
     this.usuariosFiltrados2 = [...this.usuariosFiltrados];
+    
   } else {
     // Filtrar los usuarios basados en el nombre o apellido
     this.usuariosFiltrados2 = this.usuariosFiltrados.filter(
@@ -311,6 +315,15 @@ cancelarSeleccion(): void {
   this.docenteSeleccionado = null;
   this.valorFiltroDocente = ''; // Limpiar el filtro para el nombre del docente
   this.mostrarSugerencias = false; // Ocultar sugerencias
+}
+getTituloAsistencia(): string {
+  if (this.isDocente) {
+    const now = new Date();
+    const fecha = now.toLocaleDateString(); // Formato de fecha según configuración local
+    const hora = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Hora en formato HH:MM
+    return `Asistencia (${fecha}) - (${hora})`;
+  }
+  return 'Lista de Usuarios'; // Título por defecto para no docentes
 }
 
 filtrarDocentes(event?: any): void {
@@ -416,6 +429,57 @@ async quitarDocente(id: string): Promise<void> {
     console.error('Error al eliminar docente:', error);
   }
 }
+
+async guardarAsistencia(): Promise<void> {
+  if (this.periodoSeleccionado && this.nivelSeleccionado && this.paraleloSeleccionado) {
+    const asistenciaData = this.usuariosFiltrados.map(usuario => ({
+      alumnoId: usuario.id,
+      alumnoNombre: `${usuario.nombre} ${usuario.apellido}`,
+      estadoAsistencia: this.asistencias[usuario.id] || false, // Obtiene el estado del mapa
+    }));
+
+    const registroAsistencia = {
+      fechaAsistencia: Timestamp.now(),
+      alumnos: asistenciaData,
+    };
+
+    try {
+      const cursos = await this.datosFireService.getCursoProfesor();
+      const cursoExistente = cursos.find(curso =>
+        curso.periodoId === this.periodoSeleccionado.id &&
+        curso.nivelId === this.nivelSeleccionado.id &&
+        curso.paraleloId === this.paraleloSeleccionado.id
+      );
+
+      if (cursoExistente) {
+        if (cursoExistente.asistencias && Array.isArray(cursoExistente.asistencias)) {
+          await this.datosFireService.agregarAsistenciaACurso(cursoExistente.id, registroAsistencia);
+        } else {
+          await this.datosFireService.inicializarAsistenciasCurso(cursoExistente.id, [registroAsistencia]);
+        }
+        alert('Asistencia guardada exitosamente');
+      } else {
+        const cursoProfesorData = {
+          periodoId: this.periodoSeleccionado.id,
+          periodoNombre: this.periodoSeleccionado.nombre,
+          nivelId: this.nivelSeleccionado.id,
+          nivelNombre: this.nivelSeleccionado.nombre,
+          paraleloId: this.paraleloSeleccionado.id,
+          paraleloNombre: this.paraleloSeleccionado.nombre,
+          asistencias: [registroAsistencia],
+        };
+        await this.datosFireService.crearCursoConAsistencia(cursoProfesorData);
+        alert('Curso creado con asistencia');
+      }
+    } catch (error) {
+      console.error('Error al guardar la asistencia:', error);
+      alert('Error al guardar la asistencia');
+    }
+  } else {
+    alert('Por favor, selecciona todos los campos requeridos.');
+  }
+}
+
 
 
 }

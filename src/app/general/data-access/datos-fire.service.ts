@@ -342,6 +342,30 @@ async actualizarCursoConDocente(cursoProfesorData: any): Promise<void> {
     throw new Error('No se pudo asignar el docente al curso');
   }
 }
+// Agregar una nueva asistencia al array existente
+async agregarAsistenciaACurso(cursoId: string, nuevaAsistencia: any): Promise<void> {
+  const cursoRef = doc(this.firestore, 'cursos', cursoId); // Referencia al documento
+  await updateDoc(cursoRef, {
+    asistencias: arrayUnion(nuevaAsistencia), // Agregar la nueva asistencia al array existente
+  });
+}
+
+// Inicializar el array de asistencias si no existe
+async inicializarAsistenciasCurso(cursoId: string, asistencias: any[]): Promise<void> {
+  const cursoRef = doc(this.firestore, 'cursos', cursoId); // Referencia al documento
+  await updateDoc(cursoRef, {
+    asistencias: asistencias, // Crear un nuevo array con las asistencias proporcionadas
+  });
+}
+
+// Crear un nuevo curso con asistencia
+async crearCursoConAsistencia(cursoData: any): Promise<void> {
+  const cursosCollection = collection(this.firestore, 'cursos'); // Referencia a la colección
+  await addDoc(cursosCollection, cursoData); // Agregar los datos del curso como un nuevo documento
+}
+
+
+
 
 }
 
