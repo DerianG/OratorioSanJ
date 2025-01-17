@@ -3,6 +3,7 @@ import { Firestore, Timestamp, doc,addDoc, getDoc, setDoc, collection, query, wh
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 
+
 interface Docente {
   docenteId: string;
   docenteNombre: string;
@@ -15,7 +16,7 @@ export class DatosFireService {
   private firestore = inject(Firestore);
 
   constructor() {}
-
+ 
   /**
    * Obtener todos los períodos desde Firestore.
    */

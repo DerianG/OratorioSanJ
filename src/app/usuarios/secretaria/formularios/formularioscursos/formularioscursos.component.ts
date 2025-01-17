@@ -4,6 +4,9 @@ import { AuthService } from '../../../../general/data-access/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule  ,Validators , FormGroup, FormArray  } from '@angular/forms';
 import { Timestamp } from 'firebase/firestore'; // Asegúrate de importar Timestamp
+import { Observable } from 'rxjs';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
+
 interface Docente {
   docenteId: string; // ID del docente
   docenteNombre: string; // Nombre del docente
@@ -49,6 +52,8 @@ export  class FormularioscursosComponent implements OnInit {
     private fb: FormBuilder,
     private datosFireService: DatosFireService,
     private authService: AuthService,
+    private functions: AngularFireFunctions
+
   ) { this.form = this.fb.group({
     docenteSeleccionado: ['', Validators.required], 
  });
@@ -436,6 +441,9 @@ async guardarAsistencia(): Promise<void> {
       alumnoId: usuario.id,
       alumnoNombre: `${usuario.nombre} ${usuario.apellido}`,
       estadoAsistencia: this.asistencias[usuario.id] || false, // Obtiene el estado del mapa
+      alumnoEmail: usuario.email,
+      alumnoTelefono: usuario.telefono, // Ejemplo de otro dato del alumno
+      alumnoDireccion: usuario.direccion, // Puedes incluir más campos aquí si lo necesitas
     }));
 
     const registroAsistencia = {
@@ -458,6 +466,19 @@ async guardarAsistencia(): Promise<void> {
           await this.datosFireService.inicializarAsistenciasCurso(cursoExistente.id, [registroAsistencia]);
         }
         alert('Asistencia guardada exitosamente');
+
+        // Filtrar usuarios con asistencia `false`
+        const usuariosConAsistenciaFalse = asistenciaData.filter(usuario => !usuario.estadoAsistencia);
+
+        // Enviar correos a esos usuarios
+        if (usuariosConAsistenciaFalse.length > 0) {
+          for (const usuario of usuariosConAsistenciaFalse) {
+            const asunto = 'Asistencia no registrada';
+            const mensaje = `Estimado/a ${usuario.alumnoNombre},\n\nSe ha registrado que no has marcado tu asistencia. Por favor, verifica tu estado.\n\nSaludos.`;
+            const email = usuario.alumnoEmail
+            this.enviarCorreo(asunto,mensaje,email)
+          }
+        }
       } else {
         const cursoProfesorData = {
           periodoId: this.periodoSeleccionado.id,
@@ -479,7 +500,17 @@ async guardarAsistencia(): Promise<void> {
     alert('Por favor, selecciona todos los campos requeridos.');
   }
 }
-
-
-
+async enviarCorreo(asunto: string, mensaje: string, email: string): Promise<void> {
+  const enviarCorreoFn = this.functions.httpsCallable('enviarCorreoAsistencias');
+  try {
+    const response = await enviarCorreoFn({
+      asunto: asunto,
+      mensaje: mensaje,
+      email: email 
+    }).toPromise();
+    console.log(response);
+  } catch (error) {
+    console.error("Error al enviar el correo:", error);
+  }
+}
 }

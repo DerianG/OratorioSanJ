@@ -11,16 +11,18 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideFirebaseApp(() =>
       initializeApp({
-        apiKey: 'AIzaSyAuseXSclPZMgdh-y5kUYZ687ejJdPOKgQ',
-        authDomain: 'oratorio-san-jose.firebaseapp.com',
-        projectId: 'oratorio-san-jose',
-        storageBucket: 'oratorio-san-jose.appspot.com',
-        messagingSenderId: '731229351613',
-        appId: '1:731229351613:web:7e226c0413f8e7c74651d4',
-        measurementId: 'G-NN2SYMYMMF'
+        apiKey: "AIzaSyDJKjgu3GkmLT0DRCzSmZnmz2eX8Wc2CyQ",
+        authDomain: "oratorio-san-jose-4bb01.firebaseapp.com",
+        projectId: "oratorio-san-jose-4bb01",
+        storageBucket: "oratorio-san-jose-4bb01.firebasestorage.app",
+        messagingSenderId: "981771657103",
+        appId: "1:981771657103:web:c197d634f879affb3075fa",
+  
       })
     ),
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore())
+    provideFirestore(() => getFirestore()),
+   // provideFunctions(() => getFunctions()), // Agrega soporte para Cloud Functions
+   
   ],
 };
