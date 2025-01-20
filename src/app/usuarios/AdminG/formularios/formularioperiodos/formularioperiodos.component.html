@@ -46,6 +46,9 @@
                 <label for="fechaFin" class="col-md-4 col-form-label">Fecha de Fin</label>
                 <div class="col-md-8">
                     <input type="date" class="form-control" id="fechaFin" formControlName="fechaFin" required />
+                    <div *ngIf="form.errors?.['fechaInvalida'] && form.touched" class="text-danger text-center">
+                        La fecha de fin no puede ser menor que la fecha de inicio.
+                      </div>
                 </div>
                 </div>
     
@@ -55,6 +58,7 @@
                     <select class="form-select" id="estado" formControlName="estado" required>
                     <option value="activo">Activo</option>
                     <option value="inactivo">Inactivo</option>
+                    <option value="finalizado">finalizado</option>
                     </select>
                 </div>
                 </div>
@@ -149,12 +153,13 @@
                     <tbody>
                         <tr *ngFor="let periodo of periodosFiltrados">
                             <td>{{ periodo.nombre }}</td>
-                            <td>{{ periodo.fechaInicio.toDate() | date }}</td>
-                            <td>{{ periodo.fechaFin.toDate() | date }}</td>
+                            <td>{{ periodo.fechaInicio.toDate() | date: 'dd/MM/yyyy'}}</td>
+                            <td>{{ periodo.fechaFin.toDate() | date: 'dd/MM/yyyy'}}</td>
                             <td>
                                 <span class="badge" [ngClass]="{
                                     'bg-success':  periodo.estado === 'activo', 
-                                    'bg-danger':  periodo.estado === 'inactivo'
+                                    'bg-warning':  periodo.estado === 'inactivo',
+                                    'bg-danger':  periodo.estado === 'finalizado'
                                 }"> 
                                     {{  periodo.estado }}
                                 </span>

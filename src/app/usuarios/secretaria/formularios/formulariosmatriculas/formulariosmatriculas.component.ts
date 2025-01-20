@@ -36,7 +36,7 @@ export class FormulariosmatriculasComponent implements OnInit {
   valorFiltroMatricula: string = '';
   campoFiltroMatricula: string = 'nombre';
   matriculasFiltradas: any[] = []; // Lista de matrículas después del filtrado
-
+  periodosCargados: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -88,6 +88,7 @@ export class FormulariosmatriculasComponent implements OnInit {
 async cargarPeriodosActivos(): Promise<void> {
   try {
     this.periodos = await this.datosFireService.getPeriodosActivos(); // Método en el servicio Firestore
+    this.periodosCargados = true; // Indica que se ha intentado cargar
   } catch (error) {
     console.error('Error al cargar períodos activos:', error);
   }

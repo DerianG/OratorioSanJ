@@ -151,7 +151,7 @@ export const PadresGuard: CanActivateFn = (route, state) => {
       const user = JSON.parse(userStr);
 
       // Verificar si el rol del usuario es 'administrador'
-      if (user.role === 'administrador'|| user.role === 'padre') {
+      if (user.role === 'administrador'|| user.role === 'alumno') {
         console.log("Acceso permitido");
         return of(true);  // Permitir el acceso
       } else {

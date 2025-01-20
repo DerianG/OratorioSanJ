@@ -30,7 +30,7 @@
               </div>
               <div class="col-md-8">
                 <input type="text" class="form-control" id="nombre" formControlName="nombre" placeholder="Ingrese su nombre" required />
-                <div *ngIf="isRequiredNombre">
+                <div *ngIf="form.get('nombre')?.hasError('required') && form.get('nombre')?.touched">
                   <small class="text-danger">Campo obligatorio.</small>
                 </div>
               </div>
@@ -41,7 +41,7 @@
               </div>
               <div class="col-md-8">
                 <input type="text" class="form-control" id="apellido" formControlName="apellido" placeholder="Ingrese su apellido" required />
-                <div *ngIf="isRequiredApellido ">
+                <div *ngIf="form.get('apellido')?.hasError('required') && form.get('apellido')?.touched">
                   <small class="text-danger">Campo obligatorio.</small>
                 </div>
               </div>
@@ -52,16 +52,33 @@
                 <label for="cedula" class="form-label mb-0">Cédula</label>
               </div>
               <div class="col-md-8">
-                <input type="text" class="form-control" id="cedula" formControlName="cedula" placeholder="Ingrese su cédula (10 dígitos)" required maxlength="10" (input)="filterNumbers($event)" />
-                <div *ngIf="isRequiredCedula">
+                <input type="text" class="form-control" id="cedula" formControlName="cedula"  [placeholder]="form.get('rol')?.value === 'alumno' ? 'Ingrese su cédula (10 dígitos) (opcional)' : 'Ingrese su cédula (10 dígitos)'" required maxlength="10" (input)="filterNumbers($event)" />
+                <div *ngIf="form.get('cedula')?.hasError('required') && form.get('rol')?.value !== 'alumno' && form.get('cedula')?.touched">
                   <small class="text-danger">Campo obligatorio.</small>
                 </div>
-                <div *ngIf="isCedulaInvalid">
+                <div *ngIf="form.get('cedula')?.hasError('pattern') && form.get('cedula')?.touched">
+                  <small class="text-danger">La cédula debe tener 10 dígitos.</small>
+                </div>
+                <div *ngIf="cedulaExiste">
+                  <small class="text-danger">la cedula ya existe.</small>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3" *ngIf="form.get('rol')?.value === 'alumno'">
+              <div class="col-md-4 d-flex align-items-center">
+                <label for="cedulaPadre" class="form-label mb-0">Cédula del padre</label>
+              </div>
+              <div class="col-md-8">
+                <input type="text" class="form-control" id="cedulaPadre" formControlName="cedulaPadre" placeholder="Ingrese su cédula (10 dígitos)" required maxlength="10" (input)="filterNumbers($event)" />
+                <div *ngIf="form.get('cedulaPadre')?.hasError('required') && form.get('rol')?.value === 'alumno' && form.get('cedulaPadre')?.touched ">
+                  <small class="text-danger">Campo obligatorio.</small>
+                </div>
+                <div *ngIf="form.get('cedulaPadre')?.hasError('pattern') ">
                   <small class="text-danger">La cédula debe tener 10 dígitos.</small>
                 </div>
               </div>
             </div>
-  
+
           <div class="row mb-3">
             <div class="col-md-4 d-flex align-items-center">
               <label for="email" class="form-label mb-0">Correo Electrónico</label>
@@ -72,19 +89,42 @@
                 class="form-control" 
                 id="email" 
                 formControlName="email" 
-                placeholder="Ingrese su correo electrónico" 
+                [placeholder]="form.get('rol')?.value === 'alumno' ? 'Ingrese correo electrónico (opcional)' : 'Ingrese correo electrónico'" 
                 required 
                 (ngModelChange)="onEmailChange()"
               />
-              <div *ngIf="isRequiredField">
+              <div *ngIf="form.get('email')?.hasError('required') && form.get('rol')?.value !== 'alumno' && form.get('email')?.touched">
                 <small class="text-danger">Campo obligatorio.</small>
               </div>
-              <div *ngIf="isEmailInvalid">
+              <div *ngIf="form.get('email')?.invalid && form.get('email')?.touched ">
                 <small class="text-danger">El correo electrónico debe ser válido.</small>
               </div>
               <div *ngIf="emailExiste">
                 <small class="text-danger">El email ya existe.</small>
               </div>
+            </div>
+          </div>
+          <div class="row mb-3" *ngIf="form.get('rol')?.value === 'alumno'">
+            <div class="col-md-4 d-flex align-items-center">
+              <label for="emailPadre" class="form-label mb-0">Correo del Padre</label>
+            </div>
+            <div class="col-md-8">
+              <input 
+                type="email" 
+                class="form-control" 
+                id="emailPadre" 
+                formControlName="emailPadre" 
+                placeholder="Ingrese correo del padre (obligatorio)" 
+                required 
+                (ngModelChange)="onEmailChange()"
+              />
+              <div *ngIf="form.get('emailPadre')?.hasError('required') && form.get('rol')?.value === 'alumno' && form.get('emailPadre')?.touched">
+                <small class="text-danger">Campo obligatorio.</small>
+              </div>
+              <div *ngIf="form.get('emailPadre')?.invalid && form.get('emailPadre')?.touched ">
+                <small class="text-danger">El correo electrónico debe ser válido.</small>
+              </div>
+             
             </div>
           </div>
 
@@ -105,7 +145,7 @@
               </div>
               <div class="col-md-8">
                 <input type="text" class="form-control" id="telefono" formControlName="telefono" placeholder="Ingrese su teléfono (opcional)" maxlength="10" (input)="filterNumbers($event)" />
-                <div *ngIf="isTelefonoInvalid">
+                <div *ngIf="form.get('telefono')?.hasError('pattern') && form.get('telefono')?.touched">
                   <small class="text-danger">El teléfono debe tener 10 dígitos.</small>
                 </div>
               </div>
@@ -128,7 +168,7 @@
                 <div class="form-text">
                   <small *ngIf="isPasswordInvalid" class="text-danger">La contraseña debe tener al menos 6 caracteres.</small>
                   <small *ngIf="isRequiredPassword" class="text-danger">Campo obligatorio.</small>
-                  <small *ngIf="form.get('rol')?.value === 'alumno'" class="text-info">La cédula se asignará como contraseña automáticamente para este rol.</small>
+                  <small *ngIf="form.get('rol')?.value === 'alumno'" class="text-info">La cédula del padre se asignará como contraseña automáticamente para este rol.</small>
                 </div>
               </div>
             </div>
@@ -182,7 +222,7 @@
   
         <!-- Botón de Enviar -->
         <div class="text-center">
-          <button type="submit" class="btn btn-primary" [disabled]="form.invalid || emailExiste">
+          <button type="submit" class="btn btn-primary" [disabled]="form.invalid ">
             {{ modoEdicion ? 'Guardar' : 'Registrar' }}
           </button>
         </div>

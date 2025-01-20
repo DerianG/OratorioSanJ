@@ -25,28 +25,30 @@ export class DatosFireService {
     const snapshot = await getDocs(periodosCollection);
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   }
-
-  /**
-   * Crear un período con una subcolección de niveles.
-   */
-
-  async crearPeriodoConNiveles(periodoData: any, nivelesSeleccionados: { id: string, nombre: string }[]): Promise<void> {
-    const periodosCollection = collection(this.firestore, 'periodos');
- 
-    const periodoConFechas = {
-      ...periodoData,
-      fechaCreacion: Timestamp.now(),
-      fechaModificacion: Timestamp.now(),
-   
-    };
   
-    try {
-      const nuevoPeriodoDoc = await addDoc(periodosCollection, periodoConFechas);
-    } catch (error) {
-      console.error('Error al crear el período:', error);
-      window.alert('Ocurrió un error al crear el período.');
-    }
+
+// Método para crear el periodo con niveles
+async crearPeriodoConNiveles(periodoData: any, nivelesSeleccionados: { id: string, nombre: string }[]): Promise<void> {
+  const periodosCollection = collection(this.firestore, 'periodos');
+  
+  // Asegúrate de que las fechas sean convertidas antes de enviar a Firestore
+  const periodoConFechas = {
+    ...periodoData,
+    fechaInicio: periodoData.fechaInicio ? Timestamp.fromDate(new Date(periodoData.fechaInicio)) : null,
+    fechaFin: periodoData.fechaFin ? Timestamp.fromDate(new Date(periodoData.fechaFin)) : null,
+    fechaCreacion: Timestamp.now(),
+    fechaModificacion: Timestamp.now(),
+  };
+
+  try {
+    const nuevoPeriodoDoc = await addDoc(periodosCollection, periodoConFechas);
+    console.log('Período creado con éxito', nuevoPeriodoDoc);
+  } catch (error) {
+    console.error('Error al crear el período:', error);
+    window.alert('Ocurrió un error al crear el período.');
   }
+}
+
   
   /**
    * Actualizar un período con una nueva fecha de modificación.
@@ -74,7 +76,10 @@ export class DatosFireService {
       // Crear el documento del período con solo los niveles seleccionados (con id y nombre)
       const periodoConFechaModificacion = {
         ...periodoData,
-        fechaModificacion: Timestamp.now(),
+          fechaInicio: periodoData.fechaInicio ? Timestamp.fromDate(new Date(periodoData.fechaInicio)) : null,
+          fechaFin: periodoData.fechaFin ? Timestamp.fromDate(new Date(periodoData.fechaFin)) : null,
+
+          fechaModificacion: Timestamp.now(),
       
       };
   
@@ -192,6 +197,29 @@ async getMatriculas(): Promise<any[]> {
     return [];
   }
 }
+
+// Método para obtener las matrículas asociadas a los periodos activos
+async getMatriculasPorUsuarioYPeriodosActivos(usuarioId: string): Promise<any[]> {
+  try {
+    const periodosActivos = await this.getPeriodosActivos();  // Obtener los periodos activos
+    const periodosActivosIds = periodosActivos.map(p => p.id); // Extraer solo los IDs de los periodos activos
+
+    // Obtener todas las matrículas
+    const matriculas = await this.getMatriculas();
+
+    // Filtrar las matrículas que pertenecen a los periodos activos y al usuario
+    const matriculasFiltradas = matriculas.filter(matricula => 
+      periodosActivosIds.includes(matricula.periodoId) && matricula.alumnoId === usuarioId // Filtra por periodoId y alumnoId
+    );
+
+    return matriculasFiltradas;
+  } catch (error) {
+    console.error('Error al obtener matrículas por usuario y periodos activos:', error);
+    return [];
+  }
+}
+
+
 async eliminarMatricula(id: string): Promise<void> {
   try {
     const matriculaDocRef = doc(this.firestore, `matriculas/${id}`); // Ajusta 'matriculas' según el nombre de tu colección
@@ -343,29 +371,64 @@ async actualizarCursoConDocente(cursoProfesorData: any): Promise<void> {
     throw new Error('No se pudo asignar el docente al curso');
   }
 }
-// Agregar una nueva asistencia al array existente
+// Agregar una nueva asistencia al array existente con la fecha incluida
 async agregarAsistenciaACurso(cursoId: string, nuevaAsistencia: any): Promise<void> {
+  // Verificar si los campos necesarios en nuevaAsistencia existen
+  if (!nuevaAsistencia || !nuevaAsistencia.alumnos || nuevaAsistencia.alumnos.length === 0) {
+    throw new Error("No se ha proporcionado información válida de asistencia");
+  }
+
   const cursoRef = doc(this.firestore, 'cursos', cursoId); // Referencia al documento
+
+  // Crear una copia de nuevaAsistencia y añadir la fecha
+  const asistenciaConFecha = {
+    ...nuevaAsistencia,
+    fechaAsistencia: Timestamp.now(), // Añadir la fecha automáticamente
+  };
+
+  // Verificar que todos los campos dentro de asistenciaConFecha sean válidos
+  if (!asistenciaConFecha.alumnos || asistenciaConFecha.alumnos.length === 0) {
+    throw new Error("No hay alumnos en la asistencia");
+  }
+
+  // Actualizar el documento
   await updateDoc(cursoRef, {
-    asistencias: arrayUnion(nuevaAsistencia), // Agregar la nueva asistencia al array existente
+    asistencias: arrayUnion(asistenciaConFecha), // Agregar la nueva asistencia al array existente
   });
 }
 
-// Inicializar el array de asistencias si no existe
+// Inicializar el array de asistencias si no existe, incluyendo la fecha
 async inicializarAsistenciasCurso(cursoId: string, asistencias: any[]): Promise<void> {
+  if (!asistencias || asistencias.length === 0) {
+    throw new Error("No se ha proporcionado un array de asistencias válido");
+  }
+
   const cursoRef = doc(this.firestore, 'cursos', cursoId); // Referencia al documento
+  
+  // Asegurarse de que todos los elementos de asistencias tengan la fecha
+  const asistenciasConFecha = asistencias.map(asistencia => ({
+    ...asistencia,
+    fechaAsistencia: Timestamp.now(), // Añadir la fecha automáticamente
+  }));
+
+  // Verificar que no haya campos undefined
+  if (asistenciasConFecha.some(asistencia => !asistencia.alumnos || asistencia.alumnos.length === 0)) {
+    throw new Error("Al menos una asistencia no tiene alumnos");
+  }
+
   await updateDoc(cursoRef, {
-    asistencias: asistencias, // Crear un nuevo array con las asistencias proporcionadas
+    asistencias: asistenciasConFecha, // Crear un nuevo array con las asistencias proporcionadas
   });
 }
 
-// Crear un nuevo curso con asistencia
-async crearCursoConAsistencia(cursoData: any): Promise<void> {
-  const cursosCollection = collection(this.firestore, 'cursos'); // Referencia a la colección
-  await addDoc(cursosCollection, cursoData); // Agregar los datos del curso como un nuevo documento
+
+
+async justificarFalta( justificacion: any): Promise<void> {
+
+
+
+  
 }
-
-
 
 
 }

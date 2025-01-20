@@ -228,6 +228,8 @@
                   <th>Apellido</th>
                   <th *ngIf="!isDocente">Cédula</th>
                   <th *ngIf="!isDocente">Correo</th>
+                  <th *ngIf="!isDocente">Cédula padre</th>
+                  <th *ngIf="!isDocente">Correo padre</th>
                   <th *ngIf="!isDocente">Teléfono</th>          
                   <th>Estado</th>
                   <th *ngIf="!isDocente">Fecha de Nacimiento</th>
@@ -240,6 +242,8 @@
                   <td>{{ usuario.apellido }}</td>
                   <td *ngIf="!isDocente">{{ usuario.cedula }}</td>
                   <td *ngIf="!isDocente">{{ usuario.email }}</td>
+                  <td *ngIf="!isDocente">{{ usuario.cedulaPadre }}</td>
+                  <td *ngIf="!isDocente">{{ usuario.emailPadre }}</td>
                   <td *ngIf="!isDocente">{{ usuario.telefono }}</td>
                   <td>
                     <span class="badge" [ngClass]="{
@@ -264,7 +268,8 @@
 
 
           <div *ngIf="isDocente && usuariosFiltrados2.length > 0" class="guardar-asistencia mt-4">
-            <button class="btn btn-success" (click)="guardarAsistencia()" >Guardar Asistencia</button>
+            <button class="btn btn-success" (click)="guardarAsistencia()" [disabled]="botonAsistenciaDeshabilitado">Guardar Asistencia</button>
+            <p *ngIf="mensajeAsistencia">{{ mensajeAsistencia }}</p>
           </div>
         </div>
       </div>

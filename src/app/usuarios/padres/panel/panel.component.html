@@ -1,1 +1,309 @@
-<p>panel works!</p>
+  <h1 class="text-center my-4">Padre</h1>
+  <div class="container">
+    <div class="row row-cols-1 row-cols-md-3 g-4 bg-dark mb-2">
+      <!-- Mostrar todos los usuarios como botones -->
+      <div *ngFor="let usuario of usuarios" class="col mb-4">
+        <button class="btn custom-btn w-100 h-100 d-flex flex-column justify-content-between p-3"
+                (click)="mostrardalle(usuario)">
+          <div>
+            <!-- Título del botón, nombre centrado y más grande -->
+            <h5 class="text-center mb-3 custom-title">{{ usuario.nombre || 'Nombre no disponible' }}</h5>
+
+            <!-- Información organizada con etiquetas -->
+            <ul class="list-unstyled mb-3">
+              <li>
+                <strong>Correo:</strong> {{ usuario.email }}
+              </li>
+              <li>
+                <strong>Teléfono:</strong> {{ usuario.telefono || 'No disponible' }}
+              </li>
+              <li>
+                <strong>Cédula:</strong> {{ usuario.cedula || 'No disponible' }}
+              </li>
+              <li>
+                <strong>ID:</strong> {{ usuario.cedula || 'No disponible' }}
+              </li>
+              <li>
+                <strong>Fecha nacimiento:</strong> {{ usuario.fechaNacimiento?.toDate() | date: 'dd/MM/yyyy' }}
+              </li>
+              <li> 
+                <strong>Estado:</strong>
+                <strong class="badge" [ngClass]="{
+                  'bg-success':  usuario.estado === 'activo', 
+                  'bg-danger':  usuario.estado === 'inactivo'
+                }">
+                  {{ usuario.estado }}
+                </strong>
+              </li>
+               <!-- Detalles adicionales -->
+               <div *ngIf="faltasPorUsuario[usuario.id] && faltasPorUsuario[usuario.id].length > 0; else noFaltas">
+                <li><strong>Faltas Totales:</strong> {{ faltasPorUsuario[usuario.id].length }}</li>
+              </div>
+              <ng-template #noFaltas>
+                <li><strong>Faltas Totales:</strong> No hay faltas registradas.</li>
+              </ng-template>
+            </ul>
+
+           
+          </div>
+
+          <!-- Botón al pie (usualmente vacío o con un icono) -->
+          <span class="mt-auto text-center">Ver detalles</span>
+        </button>
+      </div>
+    </div>
+
+ <!-- Detalles del usuario con tabla de faltas -->
+      <div *ngIf="verDetalle == true" class="row justify-content-between mt-4 mb-3 bg-dark">
+        <div class="container-fluid">
+          
+          <!-- Card de Detalles del Usuario -->
+          <div class="card shadow-sm p-4 mb-4">
+            <h5 class="text-center mb-3 custom-title">Detalles de Usuario</h5>
+            
+            <!-- Información del usuario -->
+            <ul class="list-group list-group-flush mb-4">
+              <li class="list-group-item">
+                <strong>Nombre:</strong> {{ usuarioSeleccionado.nombre }} {{ usuarioSeleccionado.apellido }}
+              </li>
+              <li class="list-group-item">
+                <strong>Email:</strong> {{ usuarioSeleccionado.email }}
+              </li>
+              <li class="list-group-item">
+                <strong>Cédula:</strong> {{ usuarioSeleccionado.cedula }}
+              </li>
+              <li class="list-group-item">
+                <strong>Email del Padre:</strong> {{ usuarioSeleccionado.emailPadre }}
+              </li>
+              <li class="list-group-item">
+                <strong>Cédula del Padre:</strong> {{ usuarioSeleccionado.cedulaPadre }}
+              </li>
+              <li class="list-group-item">
+                <strong>Fecha de Nacimiento:</strong> {{ usuarioSeleccionado.fechaNacimiento?.toDate() | date: 'dd/MM/yyyy' }}
+              </li>
+              <li class="list-group-item">
+                <strong>Estado:</strong> {{ usuarioSeleccionado.estado }}
+              </li>
+              <li class="list-group-item">
+                <strong>Teléfono:</strong> {{ usuarioSeleccionado.telefono || 'No disponible' }}
+              </li>
+               <!-- Detalles adicionales -->
+               <li class="list-group-item" *ngIf="faltasPorUsuario[usuarioSeleccionado.id] && faltasPorUsuario[usuarioSeleccionado.id].length > 0;">
+                   <strong>Faltas Totales:</strong> {{ faltasPorUsuario[usuarioSeleccionado.id].length }}
+              </li>
+              
+               
+            </ul>
+          </div>
+
+                      <!-- Card de Matrículas del Usuario -->
+            <div *ngIf="verDetalle == true " class="row justify-content-between mt-4 mb-3 bg-dark">
+              <div class="container-fluid">
+                <!-- Título -->
+                <h4 class="text-center text-white">Matrículas del Alumno</h4>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                  <!-- Iterar sobre las matrículas del usuario -->
+                  <div *ngFor="let matricula of matriculasUsuario" class="col mb-4">
+                    <!-- Card de cada matrícula -->
+                    <div class="card shadow-sm p-3 h-100">
+                      <div class="card-body">
+                        <h5 class="card-title text-center">Periodo: {{ matricula.periodoNombre }}</h5>
+                        <p class="card-text"><strong>Nivel:</strong> {{ matricula.nivelNombre }}</p>
+                        <p class="card-text"><strong>Paralelo:</strong> {{ matricula.paraleloNombre }}</p>
+                        <p class="card-text"><strong>Fecha de Matrícula:</strong> {{ matricula.fechaMatricula?.toDate() | date: 'dd/MM/yyyy' }}</p>
+
+                        <!-- Botón o acciones adicionales si se requieren -->
+                        <div class="d-flex justify-content-center">
+                          <button class="btn btn-primary"  (click)="mostrardalleMatricula(matricula)">Ver Faltas</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mensaje cuando no haya matrículas para mostrar -->
+            <div *ngIf="verDetalle == true && matriculasUsuario?.length === 0" class="text-center text-white bt-4 mb-4">
+              <p>No hay matrículas registradas para este usuario en los períodos activos.</p>
+            </div>
+
+          <!-- Card de Tabla de Faltas -->
+          <div  *ngIf="verDetalleMatricula==true" class="card shadow-sm mt-4 me-2 ms-2">
+            <div class="card-header text-center bg-primary text-white">
+              <h4>Faltas Alumno: {{ cantidadFaltas }}</h4>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>Periodo</th>
+                    <th>Nivel</th>
+                    <th>Paralelo</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let falta of faltas">
+                    <td>{{ matriculaSeleccionada.periodoNombre }}</td>
+                    <td>{{ matriculaSeleccionada.nivelNombre }}</td>
+                    <td>{{ matriculaSeleccionada.paraleloNombre }}</td>
+                    <td>{{ falta.fecha | date: 'dd/MM/yyyy' }}</td>
+                    <td>
+                      <button class="btn btn-warning" (click)="justificarFalta(matriculaSeleccionada,falta.fecha)">Justificar</button>
+                    </td>
+                  </tr>
+                  <!-- Mensaje si no hay faltas -->
+                  <tr *ngIf="cantidadFaltas=='0'">
+                    <td colspan="5" class="text-center">No hay faltas registradas</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        <!-- Card para el Formulario -->
+          <div class="card shadow-sm mt-4 me-2 ms-2" *ngIf="verJustificacion == true">
+             <div class="card-header text-center bg-primary text-white">
+                <h4>Justificar Faltas</h4>
+              </div>
+              <div class="card-body">
+              <!-- Formulario de Registro -->
+         <!-- Formulario de Registro -->
+         <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="card shadow-sm mt-2 me-2 ms-2">
+            <div class="card-body">
+              <!-- Campos del Formulario -->
+              <div class="mb-3">
+                <label for="periodo" class="form-label">Periodo</label>
+                <input id="periodo" type="text" class="form-control" formControlName="periodo" disabled>
+              </div>
+        
+              <div class="mb-3">
+                <label for="nivel" class="form-label">Nivel</label>
+                <input id="nivel" type="text" class="form-control" formControlName="nivel" disabled>
+              </div>
+        
+              <div class="mb-3">
+                <label for="paralelo" class="form-label">Paralelo</label>
+                <input id="paralelo" type="text" class="form-control" formControlName="paralelo" disabled>
+              </div>
+        
+              <div class="mb-3">
+                <label for="nombreAlumno" class="form-label">Nombre del Alumno</label>
+                <input id="nombreAlumno" type="text" class="form-control" formControlName="nombreAlumno" disabled>
+              </div>
+        
+              <div class="mb-3">
+                <label for="fechaFalta" class="form-label">Fecha de la Falta</label>
+                <input id="fechaFalta" type="date" class="form-control" formControlName="fechaFalta" disabled>
+              </div>
+        
+              <div class="mb-3">
+                <label for="descripcionJustificacion" class="form-label">Descripción de la Justificación</label>
+                <input id="descripcionJustificacion" type="text" class="form-control" formControlName="descripcionJustificacion" placeholder="Ingresa una descripción de la justificación">
+                <div *ngIf="form.get('descripcionJustificacion')?.invalid && form.get('descripcionJustificacion')?.touched" class="text-danger">
+                  <small>Este campo es obligatorio.</small>
+                </div>
+              </div>
+        
+              <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
+                  Solicitar Justificación
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+        
+
+              </div>
+          </div>
+          
+
+
+
+        </div>
+      </div>
+
+
+
+
+
+
+  </div>
+
+  <!-- Estilos Directos (CSS en línea) -->
+  <style>
+    /* Estilo personalizado para los botones */
+    .custom-btn {
+      background: linear-gradient(145deg, #f0f0f0, #d9d9d9); /* Degradado suave gris */
+      border: none;
+      border-radius: 10px;  /* Bordes redondeados */
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);  /* Sombra suave */
+      transition: all 0.3s ease;  /* Transición suave para efectos hover */
+      text-align: left;
+    }
+
+    /* Efecto hover para cambiar la sombra y darle un toque de elevación */
+    .custom-btn:hover {
+      background: linear-gradient(145deg, #f0f0f0, #e0e0e0); /* Ligeramente más claro en hover */
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);  /* Sombra más fuerte al pasar el mouse */
+      transform: translateY(-5px);  /* Efecto de elevación al pasar el mouse */
+    }
+
+    /* Efecto de foco (opcional) */
+    .custom-btn:focus {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.5);  /* Resaltar al hacer foco */
+    }
+
+    /* Cambiar el tamaño del nombre para que sea más grande y centrado */
+    .custom-title {
+      font-size: 1.5rem;  /* Aumentar tamaño del nombre */
+      font-weight: bold;  /* Hacer el nombre más destacado */
+      text-align: center;  /* Asegurarse de que el nombre esté centrado */
+    }
+
+    /* Cambiar el color del texto en los elementos de la lista */
+    .custom-btn .list-unstyled li {
+      color: #333; /* Color más oscuro para el texto */
+    }
+
+    /* Estilo para el pie del botón */
+    .custom-btn span {
+      font-weight: bold;
+      color: #007bff; /* Color azul para el texto al pie */
+    }
+
+    /* Cambio de color cuando el cursor está encima */
+    .custom-btn:hover span {
+      color: #007bff;  /* No cambiar el color del texto */
+    }
+
+    /* Estilos de la tabla */
+    table {
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    th, td {
+      text-align: center;
+      padding: 12px;
+    }
+
+    th {
+      background-color: #343a40;
+      color: white;
+    }
+
+    td {
+      background-color: #f8f9fa;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #e9ecef;
+    }
+  </style>

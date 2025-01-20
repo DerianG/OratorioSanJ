@@ -59,6 +59,18 @@ isUserLoggedIn(): Observable<boolean> {
       return false;
     }
   }
+   // Método para verificar si el correo electrónico ya está registrado
+   async cedulaYaRegistrado(cedula: string): Promise<boolean> {
+    try {
+      const usersRef = collection(this.firestore, 'users');
+      const querySnapshot = await getDocs(query(usersRef, where('cedula', '==', cedula))); // Buscamos por email
+
+      return !querySnapshot.empty; // Si hay resultados, el correo ya está registrado
+    } catch (error) {
+      console.error('Error al verificar el cedula:', error);
+      return false;
+    }
+  }
  
 async registrarUsuario(
   email: string,
@@ -70,38 +82,43 @@ async registrarUsuario(
   role: string,
   estado: string,
   fechaNacimiento: string,  // Agregar el campo de fecha de nacimiento
-
-
+  emailPadre:string,
+  cedulaPadre:string,
 ): Promise<boolean> {
   try {
-    // Verificamos si el email ya está registrado antes de crear el usuario
-    const emailExistente = await this.correoYaRegistrado(email);
-    if (emailExistente) {
-      return false; // Si el email ya existe, retornamos false
-    }
-
     // Crear un nuevo documento en la colección 'users', generando un ID auto-generado por Firestore
     const newUserRef = doc(collection(this.firestore, 'users'));  // Esto generará un ID único automáticamente
-
-    // Convertir fechaNacimiento a un objeto Timestamp
-    //const fechaNacimientoTimestamp = Timestamp.fromDate(new Date(fechaNacimiento));  // Convierte la fecha de nacimiento a Timestamp
-
     // Lógica para guardar los datos completos si el rol es 'alumno'
     if (role === 'alumno') {
+      const cedulaExiste = await this.cedulaYaRegistrado(cedula);
+      if (cedulaExiste) {
+        return false; // Si el email ya existe, retornamos false
+      }
       // Aquí guardamos todos los datos necesarios para el rol alumno
       await setDoc(newUserRef, {
-        nombre,
-        apellido,
-        cedula,  // Guardamos la cédula
-        telefono,  // Guardamos el teléfono
         email,
+        contraseña,
+        nombre,  // Guardamos la cédula
+        apellido,  // Guardamos el teléfono
+        cedula,
+        telefono,
         role,
         estado,
-        contraseña,  // Guardar la contraseña en Firestore (aunque no es lo ideal)
         fechaNacimiento,  // Guardar la fecha de nacimiento como Timestamp
+        emailPadre,
+        cedulaPadre,
         fechaIngreso: Timestamp.now(), // Fecha en formato timestamp
       });
     } else {
+          // Verificamos si el email ya está registrado antes de crear el usuario
+      const emailExistente = await this.correoYaRegistrado(email);
+      if (emailExistente) {
+        return false; // Si el email ya existe, retornamos false
+      }
+      const cedulaExiste = await this.cedulaYaRegistrado(cedula);
+      if (cedulaExiste) {
+        return false; // Si el email ya existe, retornamos false
+      }
       // Si el rol no es 'alumno', guardamos los datos básicos
       await setDoc(newUserRef, {
         nombre,
@@ -141,21 +158,42 @@ async registrarUsuario(
       return null;  // En caso de error, retornamos null
     }
   }
+   // Método para obtener el usuario por su email
+   async getUsersByCedulaPadre(emailPadre: string): Promise<any[]> {
+    try {
+      const usersRef = collection(this.firestore, 'users');
+      const querySnapshot = await getDocs(query(usersRef, where('emailPadre', '==', emailPadre)));
+      const users: any[] = [];
+      querySnapshot.forEach(doc => {
+        users.push({ id: doc.id, ...doc.data() });
+      });
+
+      return users; // Devuelve el array de usuarios
+    } catch (error) {
+      console.error('Error al obtener los usuarios:', error);
+      return [];  // En caso de error, retornamos un arreglo vacío
+    }
+  }
 
   async login(email: string, contraseña: string): Promise<boolean> {
     try {
       // Referencia a la colección 'users'
       const usersRef = collection(this.firestore, 'users');
       
-      // Realizar una consulta para encontrar el documento donde el campo 'email' coincida
-      const q = query(usersRef, where('email', '==', email));
+      // Realizamos dos consultas, una para 'email' y otra para 'emailPadre'
+      const qEmail = query(usersRef, where('email', '==', email));
+      const qEmailPadre = query(usersRef, where('emailPadre', '==', email));
   
-      // Ejecutar la consulta
-      const querySnapshot = await getDocs(q);
+      // Ejecutamos ambas consultas
+      const querySnapshotEmail = await getDocs(qEmail);
+      const querySnapshotEmailPadre = await getDocs(qEmailPadre);
   
-      // Si se encuentra al menos un usuario con el email
+      // Combinamos los resultados de ambas consultas
+      const querySnapshot = querySnapshotEmail.empty ? querySnapshotEmailPadre : querySnapshotEmail;
+  
+      // Si se encuentra al menos un usuario con el email o emailPadre
       if (!querySnapshot.empty) {
-        // Obtenemos el primer documento (debería ser único si el email es único)
+        // Obtenemos el primer documento (debería ser único si el email o emailPadre es único)
         const userDoc = querySnapshot.docs[0];
         const userData = userDoc.data();
         const storedPassword = userData?.['contraseña'];  // Contraseña almacenada en Firestore
@@ -257,18 +295,23 @@ logout(): Promise<void> {
    // Método para actualizar un usuario existente
    async actualizarUsuario(
     id: string,
-    email: string,
-    contraseña: string,
-    nombre: string,
-    apellido: string,
-    cedula: string,
-    telefono: string,
-    role: string,
-    estado: string,
-    fechaNacimiento: string,  // Guardar la fecha de nacimiento como Timestamp
+     email: string,
+      contraseña: string,
+      nombre: string,
+      apellido:string,
+      cedula: string,
+      telefono: string,
+      role: string,
+      estado: string,
+      fechaNacimiento: string,  // Agregar el campo de fecha de nacimiento
+      emailPadre:string,
+      cedulaPadre:string,
+
   ): Promise<boolean> {
     try {
       const usuarioDocRef = doc(this.firestore, 'users', id); // Referencia al documento específico
+
+      if (role === 'alumno') {
       await updateDoc(usuarioDocRef, {
         email,
         contraseña,
@@ -281,7 +324,23 @@ logout(): Promise<void> {
         fechaNacimiento,  // Guardar la fecha de nacimiento como Timestamp
         fechaActualizacion: Timestamp.now(), // Fecha en formato timestamp
       });
-  
+      }else{
+        await updateDoc(usuarioDocRef, {
+          email,
+          contraseña,
+          nombre,
+          apellido,
+          cedula,
+          telefono,
+          role,
+          estado,
+          fechaNacimiento,  // Guardar la fecha de nacimiento como Timestamp
+          emailPadre,
+          cedulaPadre,
+          fechaActualizacion: Timestamp.now(), // Fecha en formato timestamp
+        });
+        
+      }
       return true;
     } catch (error) {
       console.error('Error al actualizar el usuario:', error);

@@ -18,6 +18,7 @@ export default class FormulariousuariosComponent implements OnInit {
   modoEdicion: boolean = false;
   usuarioEditando: any = null;
   emailExiste: boolean = false;
+  cedulaExiste: boolean = false;
   mostrarForm: boolean = false; 
   passwordVisible: boolean = false;  // Controla la visibilidad de la contraseña
   usuariosFiltrados: any[] = [];
@@ -38,114 +39,125 @@ export default class FormulariousuariosComponent implements OnInit {
   this.form = this.fb.group({
     nombre: ['', Validators.required],
     apellido: ['', Validators.required],
-    cedula: ['', [Validators.required, Validators.pattern('^\\d{10}$')]], // Cédula con validación
+    cedula: ['', [ Validators.pattern('^\\d{10}$')]], // Cédula con validación
+    cedulaPadre: ['', [ Validators.pattern('^\\d{10}$')]], // Cédula con validación
     fechanacimiento: ['', Validators.required],
     telefono: ['', Validators.pattern('^\\d{10}$')], // Teléfono con validación de 10 dígitos
-    email: ['', [Validators.required, Validators.email]], // Email con validación
+    email: ['', [ Validators.email]], // Email con validación
+    emailPadre: ['', [ Validators.email]], // Email con validación
     contraseña: ['', [Validators.required, Validators.minLength(6)]], // Contraseña mínima de 6 caracteres
     confirmContraseña: ['', [Validators.required]], // Confirmación de contraseña
-    rol: ['alumno', Validators.required], // Rol por defecto
+    rol: ['profesor', Validators.required], // Rol por defecto
     estado: ['inactivo', Validators.required], // Estado por defecto
    
   }, { validators: [matchPasswords] });  // Agregar el validador de contraseñas
 }
 
+
 async ngOnInit(): Promise<void> {
   this.cargarUsuarios();
-
   const currentUser = this.authService.getCurrentUser();
   this.currentUserRole = currentUser?.role || '';
   this.isSecretario = this.currentUserRole === 'secretario';
-  
+
+  // Establecer el rol "alumno" por defecto
+ // this.form.get('rol')?.setValue('alumno'); 
+
   // Bloquear el selector si el usuario es secretario
   if (this.currentUserRole === 'secretario') {
     this.form.get('rol')?.setValue('alumno'); // Establecer el rol "alumno"
     this.form.get('rol')?.disable(); // Deshabilitar el control a nivel del FormGroup
-    this.isAlumnoLocked = true; // Actualizar variable para usar en la plantilla (si es necesario)
+    this.isAlumnoLocked = true;
   } else {
     this.form.get('rol')?.enable(); // Habilitar el control si no es secretario
-    this.isAlumnoLocked = false; // Habilitar para otros roles si es necesario
+    this.isAlumnoLocked = false;
   }
 
- // Establecer la cédula como contraseña al cargar el formulario
- if (this.form.get('rol')?.value === 'alumno') {
-  this.form.patchValue({
-    contraseña: this.form.get('cedula')?.value || '',
-    confirmContraseña: this.form.get('cedula')?.value || '',
+  // Establecer la cédula como contraseña al cargar el formulario si el rol es 'alumno'
+  if (this.form.get('rol')?.value === 'alumno') {
+    this.form.patchValue({
+      contraseña: this.form.get('cedulaPadre')?.value || '',
+      confirmContraseña: this.form.get('cedulaPadre')?.value || '',
+    });
+  }
+
+  this.setConditionalValidators();
+  this.establecerContraseñaConCedulaPadre();
+
+  // Establecer validadores cuando el rol cambie
+  this.form.get('rol')?.valueChanges.subscribe(() => {
+    this.establecerContraseñaConCedulaPadre();
+    this.setConditionalValidators();
   });
+
 }
+setConditionalValidators() {
+  const rol = this.form.get('rol')?.value;
+  const cedulaControl = this.form.get('cedula');
+  const emailControl = this.form.get('email');
+  const cedulaPadreControl = this.form.get('cedulaPadre');
+  const emailPadreControl = this.form.get('emailPadre');
+  // Si el rol es 'alumno', los campos de cédula y email no son requeridos
+  if (rol === 'alumno') {
+    cedulaControl?.clearValidators();
+    emailControl?.clearValidators();
+    cedulaPadreControl?.setValidators([Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]);
+    emailPadreControl?.setValidators([Validators.required, Validators.email]);
 
+  } else {
+    // Si el rol es otro, los campos de cédula y email son requeridos
+    cedulaPadreControl?.clearValidators();
+    emailPadreControl?.clearValidators();
+    cedulaControl?.setValidators([Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]);
+    emailControl?.setValidators([Validators.required, Validators.email]);
+  }
 
-  this.form.get('rol')?.valueChanges.subscribe((rolValue) => {
-    const isAlumno = rolValue === 'alumno';
-   
-  
-    // Limpiar los campos relacionados si no es "alumno"
-    if (!isAlumno) {
+  // Actualiza los estados de validación
+  cedulaControl?.updateValueAndValidity();
+  emailControl?.updateValueAndValidity();
+  cedulaPadreControl?.updateValueAndValidity();
+  emailPadreControl?.updateValueAndValidity();
+}
+  establecerContraseñaConCedulaPadre() {
+    const rol = this.form.get('rol')?.value;
+    if (rol === 'alumno') {
+      const cedulaPadre = this.form.get('cedulaPadre')?.value;
       this.form.patchValue({
-        fechanacimiento: null,
+        contraseña: cedulaPadre || '',
+        confirmContraseña: cedulaPadre || ''
       });
-    }
-
-    // Hacer los campos requeridos solo si es "alumno"
-    this.form.get('fechanacimiento')?.setValidators(isAlumno ? [Validators.required] : null);
-
-
-    // Limpiar los valores de los campos cuando no sea "alumno"
-    if (!isAlumno) {
-      this.form.patchValue({
-        fechanacimiento: null,
-      
-      });
-    }
-
-    // Actualizar la validez de los campos
-    this.form.get('fechanacimiento')?.updateValueAndValidity();
-
-    
-    // Si es "alumno", se manejan las contraseñas
-    if (isAlumno) {
-      this.form.get('contraseña')?.disable();
-      this.form.get('confirmContraseña')?.disable();
-
-      this.form.patchValue({
-        contraseña: this.form.get('cedula')?.value || '',
-        confirmContraseña: this.form.get('cedula')?.value || '',
-      });
-
-      this.cedulaSubscription = this.form.get('cedula')?.valueChanges.subscribe((cedulaValue) => {
+      this.cedulaSubscription = this.form.get('cedulaPadre')?.valueChanges.subscribe((cedulaValue) => {
         this.form.patchValue({
           contraseña: cedulaValue || '',
           confirmContraseña: cedulaValue || '',
         });
       });
+      // Deshabilitar los campos de contraseña para "alumno"
+      this.form.get('contraseña')?.disable();
+      this.form.get('confirmContraseña')?.disable();
     } else {
+      // Habilitar los campos de contraseña si no es "alumno"
       this.form.get('contraseña')?.enable();
       this.form.get('confirmContraseña')?.enable();
-      this.form.patchValue({
-        contraseña: '',
-        confirmContraseña: '',
-      });
     }
-  });
-}
-
+  }
     // Función
     // Función para mostrar/ocultar el formulario
     mostrarFormulario(): void {
+    
       if (this.mostrarForm) {
         // Siempre resetea el formulario al cancelar
         this.resetForm();
         this.modoEdicion = false; // Asegúrate de salir del modo edición si estaba activo
         this.mostrarForm = false; // Oculta el formulario
       } else {
+         
         this.mostrarForm = true; // Muestra el formulario
       }
     }
     togglePasswordVisibility(): void {
       this.passwordVisible = !this.passwordVisible;
     }
-
 
   // Cargar usuarios desde el servicio
   async cargarUsuarios() {
@@ -274,7 +286,7 @@ async ngOnInit(): Promise<void> {
   
       const finalData = {
         ...formData,
-        contraseña: formData.rol === 'alumno' ? formData.cedula : formData.contraseña,
+        contraseña: formData.rol === 'alumno' ? formData.cedulaPadre : formData.contraseña,
         confirmContraseña: undefined, // No necesitamos enviar la confirmación
         fechanacimiento: formData.fechanacimiento ? Timestamp.fromDate(new Date(`${formData.fechanacimiento}T00:00:00`)) : null,
       };
@@ -283,38 +295,57 @@ async ngOnInit(): Promise<void> {
       if (this.modoEdicion) {
         const updatedData = { ...finalData, id: this.usuarioEditando.id };
         console.log(this.usuarioEditando.id)
-        try {
-          const resultado = await this.authService.actualizarUsuario(
-            this.usuarioEditando.id,
-            finalData.email,
-            finalData.contraseña,
-            finalData.nombre,
-            finalData.apellido,
-            finalData.cedula,
-            finalData.telefono,
-            finalData.rol,
-            finalData.estado,
-            finalData.fechanacimiento,
-          );
-  
-          if (resultado) {
-            alert('Usuario actualizado exitosamente');
-            this.resetForm();
-            this.cargarUsuarios();
-          } else {
-            alert('Error al actualizar el usuario.');
+
+    
+          try {
+            const resultado = await this.authService.actualizarUsuario(
+              this.usuarioEditando.id,
+              finalData.email,
+              finalData.contraseña,
+              finalData.nombre,
+              finalData.apellido,
+              finalData.cedula,
+              finalData.telefono,
+              finalData.rol,
+              finalData.estado,
+              finalData.fechanacimiento,
+              finalData.emailPadre,
+              finalData.cedulaPadre,
+            );
+    
+            if (resultado) {
+              alert('Usuario actualizado exitosamente');
+              this.resetForm();
+              this.cargarUsuarios();
+            } else {
+              alert('Error al actualizar el usuario.');
+            }
+          } catch (error) {
+            console.error('Error al actualizar usuario', error);
+            alert('Error al actualizar usuario');
           }
-        } catch (error) {
-          console.error('Error al actualizar usuario', error);
-          alert('Error al actualizar usuario');
-        }
+      
       } else {
         // Si no estamos editando, creamos un nuevo usuario
          // Si el correo fue modificado y ya no es el mismo correo existente, reiniciar la validación
+         if (formData.rol === 'alumno'){
+              if (this.emailExiste) {
+                this.emailExiste = false;
+              }     
+              // Verificamos si el correo ya existe solo cuando el formulario se envía
+              const emailExistente = await this.authService.correoYaRegistrado(formData.email);
+              
+              // Si el correo existe, mostrar el mensaje de error
+              if (emailExistente) {
+                this.emailExiste = true;
+                alert('El correo electrónico del alumno ya está registrado.');
+                return;
+              }
+              
+         }else{
           if (this.emailExiste) {
             this.emailExiste = false;
-          }
-      
+          }     
           // Verificamos si el correo ya existe solo cuando el formulario se envía
           const emailExistente = await this.authService.correoYaRegistrado(formData.email);
           
@@ -324,6 +355,19 @@ async ngOnInit(): Promise<void> {
             alert('El correo electrónico ya está registrado.');
             return;
            }
+         }
+          if (this.cedulaExiste) {
+            this.cedulaExiste = false;
+          }     
+          // Verificamos si el correo ya existe solo cuando el formulario se envía
+          const cedulaexistente = await this.authService.cedulaYaRegistrado(formData.cedula);
+          
+          // Si el correo existe, mostrar el mensaje de error
+          if (cedulaexistente) {
+            this.cedulaExiste= true;
+            alert('Cedula ya registrada.');
+            return;
+          }
         try {
           
           const resultado = await this.authService.registrarUsuario(
@@ -336,7 +380,8 @@ async ngOnInit(): Promise<void> {
             finalData.rol,
             finalData.estado,
             finalData.fechanacimiento,
-
+            finalData.emailPadre,
+            finalData.cedulaPadre,
           );
   
           if (resultado) {
@@ -360,7 +405,9 @@ async ngOnInit(): Promise<void> {
   onEmailChange() {
     this.emailExiste = false; // Reiniciar el estado de correo existente
   }
-  
+  onCedulaChange() {
+    this.cedulaExiste = false; // Reiniciar el estado de correo existente
+  }
   
   convertirFecha(fecha: Timestamp | Date): string {
     let dateObj: Date;
@@ -397,13 +444,14 @@ async ngOnInit(): Promise<void> {
       estado: usuario.estado,
       contraseña: usuario.contraseña,
       confirmContraseña: usuario.contraseña,
-      
+      fechanacimiento:this.convertirFecha(usuario.fechaNacimiento) || '',
     });
   
     // Si el rol es alumno, cargamos los valores dinámicos
     if (usuario.role === 'alumno') {
      this.form.patchValue({
-        fechanacimiento:this.convertirFecha(usuario.fechaNacimiento) || '',
+        cedulaPadre: usuario.cedulaPadre,
+        emailPadre: usuario.emailPadre,
      })
     }
   
@@ -430,6 +478,7 @@ resetForm(): void {
     estado: 'inactivo'
   });
   this.emailExiste = false; // Restablecer el estado de emailExiste
+  this.cedulaExiste= false;
   this.mostrarForm = false; // Ocultar el formulario al resetear
 }
 
@@ -441,24 +490,11 @@ resetForm(): void {
   }
 
   // Validadores simplificados
-  get isEmailInvalid() {
-    const control = this.form.get('email');
-    return control?.hasError('email') && control?.touched;
-  }
+
 
   get isPasswordInvalid() {
     const control = this.form.get('contraseña');
     return control?.hasError('minlength') && control?.touched;
-  }
-
-  get isCedulaInvalid() {
-    const control = this.form.get('cedula');
-    return control?.hasError('pattern') && control?.touched;
-  }
-
-  get isTelefonoInvalid() {
-    const control = this.form.get('telefono');
-    return control?.hasError('pattern') && control?.touched;
   }
 
   // Validación de que las contraseñas coinciden
@@ -466,11 +502,6 @@ resetForm(): void {
     return this.form.hasError('mismatch') && this.form.get('confirmContraseña')?.touched;
   }
 
-  // Validación de los campos requeridos
-  get isRequiredField() {
-    return isRequired('email', this.form);
-  }
-  
   get isRequiredPassword() {
     return this.form.get('contraseña')?.hasError('required') && this.form.get('contraseña')?.touched;
   }
@@ -478,30 +509,5 @@ resetForm(): void {
   get isRequiredConfirmPassword() {
     return this.form.get('confirmContraseña')?.hasError('required') && this.form.get('confirmContraseña')?.touched;
   }
-
-  get isRequiredNombre() {
-    return this.form.get('nombre')?.hasError('required') && this.form.get('nombre')?.touched;
-  }
-  get isRequiredApellido() {
-    return this.form.get('apellido')?.hasError('required') && this.form.get('apellido')?.touched;
-  }
-
-
-  get isRequiredCedula() {
-    return this.form.get('cedula')?.hasError('required') && this.form.get('cedula')?.touched;
-  }
-
-  get isRequiredTelefono() {
-    return this.form.get('telefono')?.hasError('required') && this.form.get('telefono')?.touched;
-  }
-
-  get isRequiredRol() {
-    return this.form.get('rol')?.hasError('required') && this.form.get('rol')?.touched;
-  }
-
-  get isRequiredEstado() {
-    return this.form.get('estado')?.hasError('required') && this.form.get('estado')?.touched;
-  }
-
 
 }

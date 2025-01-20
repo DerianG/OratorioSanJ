@@ -11,19 +11,7 @@
             <div>Asistencia</div>
           </button>
         </div>
-        <div class="col-12 col-md-4 mt-4">
-          <button type="button" class="btn btn-warning w-100 text-center" (click)="cambiarVista('alumnos')">
-            <img src="alumnos.png" class="img-fluid" width="150" alt="Alumnos">
-            <div>Alumnos</div>
-          </button>
-        </div>
-        <div class="col-12 col-md-4 mt-4">
-          <button type="button" class="btn btn-primary w-100 text-center" (click)="cambiarVista('matriculas')">
-            <img src="matricula.png" class="img-fluid" width="150" alt="Configuración">
-            <div>Matriculas</div>
-          </button>
-        </div>
-      </div>
+      
 
       <!-- Contenido dinámico del formulario -->
       <div class="row justify-content-between">
@@ -35,13 +23,7 @@
             <div *ngIf="vistaSeleccionada === 'asistencia'">
               <app-formularioscursos></app-formularioscursos>
             </div>
-            <!-- Mostrar el formulario solo si la vista seleccionada es "usuarios" -->
-            <div *ngIf="vistaSeleccionada === 'alumnos'">
            
-            </div>
-            <div *ngIf="vistaSeleccionada === 'matriculas'">
-          
-            </div>
           </div>
         </div>
       </div>

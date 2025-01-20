@@ -37,9 +37,9 @@
                     </div>
                     </div>
             
-                    <div class="row mb-3" *ngIf="periodoSeleccionado && niveles.length === 0">
-                    <p>No hay niveles disponibles para este período.</p>
-                    </div>
+                    <div class="row mb-3" *ngIf="periodos.length === 0 && periodosCargados">
+                        <p>No hay períodos activos.</p>
+                      </div>
             
                     <!-- Seleccionar nivel -->
                     <div class="row mb-3">
@@ -249,7 +249,7 @@
                                 </div>
                             </td>
                             <td>{{ matricula.id }}</td>
-                            <td>{{ matricula.fechaMatricula | date }}</td>
+                            <td>{{ matricula.fechaMatricula |date: 'dd/MM/yyyy'}}</td>
                             <td>{{ matricula.periodoNombre }}</td>
                             <td>{{ matricula.nivelNombre }}</td>
                             <td>{{ matricula.paraleloNombre }}</td>

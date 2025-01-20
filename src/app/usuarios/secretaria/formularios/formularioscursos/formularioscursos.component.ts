@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule  ,Validators , FormGroup, FormArray  } from '@angular/forms';
 import { Timestamp } from 'firebase/firestore'; // Asegúrate de importar Timestamp
 import { Observable } from 'rxjs';
-import { AngularFireFunctions } from '@angular/fire/compat/functions';
+
 
 interface Docente {
   docenteId: string; // ID del docente
@@ -46,13 +46,14 @@ export  class FormularioscursosComponent implements OnInit {
   docentesFiltrados2: any[] = [];
   isDocente: boolean = false; // Variable que indica si el usuario es  isDocente: boolean = false; // Variable que indica si el usuario es 
   asistencias: { [usuarioId: string]: boolean } = {};
-
+  botonAsistenciaDeshabilitado: boolean = false; // Control para deshabilitar el botón
+  mensajeAsistencia: string = ''; // Tiempo restante hasta poder tomar la asistencia
   
   constructor(
     private fb: FormBuilder,
     private datosFireService: DatosFireService,
     private authService: AuthService,
-    private functions: AngularFireFunctions
+   
 
   ) { this.form = this.fb.group({
     docenteSeleccionado: ['', Validators.required], 
@@ -60,14 +61,12 @@ export  class FormularioscursosComponent implements OnInit {
 }
 
   async ngOnInit(): Promise<void> {
-
-    this.cargarPeriodosActivos(); 
-
     const currentUser = this.authService.getCurrentUser();
     this.currentUserRole = currentUser?.role || '';
     this.isSecretario = this.currentUserRole === 'secretario';
     this.isDocente = this.currentUserRole === 'profesor';
- 
+    this.cargarPeriodosActivos(); 
+    
   }
   // Cargar períodos activos desde Firestore
   async cargarPeriodosActivos(): Promise<void> {
@@ -80,14 +79,18 @@ export  class FormularioscursosComponent implements OnInit {
   }
  // Método para seleccionar un paralelo
  async seleccionarParalelo(paralelo: any): Promise<void> {  
+  if (this.isDocente) {
+    this.verificarDisponibilidadAsistencia(); // Re-verificar la disponibilidad para el siguiente día
+  }else{
+    this.cargarUsuariosDocentes(); // Recargar los usuarios cuando se selecciona un paralelo
+  }
   this.paraleloSeleccionado = paralelo;
   this.cancelarSeleccion()
   console.log('Paralelo seleccionado:', this.paraleloSeleccionado);
      // Cargar las matrículas para el periodo, nivel y paralelo seleccionados
   this.cargarCursoProfesor();
-  this.cargarUsuariosDocentes(); // Recargar los usuarios cuando se selecciona un paralelo
   this.cargarUsuariosAlumnos(); // Recargar los usuarios cuando se selecciona un paralelo
-  
+
 }
   
 // Método para seleccionar un nivel
@@ -100,23 +103,57 @@ async seleccionarNivel(nivel: any): Promise<void> {
     this.paraleloSeleccionado = null; // Desmarcar paralelo seleccionado
     return;
   }
-  
+
   this.nivelSeleccionado = nivel;
   this.paralelos = []; // Reiniciar paralelos antes de cargarlos
   this.paraleloSeleccionado = null; // Restablecer el paralelo seleccionado
-  this.cancelarSeleccion()
-  try {
-    this.paralelos = await this.datosFireService.getParalelos(); // Cargar paralelos
-    
-    // Ordenar los paralelos alfabéticamente
-    this.paralelos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  this.cancelarSeleccion();
 
-    // Buscar el paralelo "A" por defecto
-    const paraleloA = this.paralelos.find(paralelo => paralelo.nombre === 'A');
-    if (paraleloA) {
-      this.paraleloSeleccionado = paraleloA; // Seleccionar paralelo "A"
+  try {
+    const idDocente = this.authService.getCurrentUser().uid; // Obtener ID del docente actual
+
+    if (this.isDocente) {
+      // 1. Obtener todos los paralelos
+      const todosLosParalelos = await this.datosFireService.getParalelos();
+
+      // 2. Obtener todos los cursos
+      const cursos = await this.datosFireService.getCursoProfesor();
+
+      // 3. Filtrar cursos del docente
+      const cursosDelDocente = cursos.filter((curso) =>
+        curso.docentes.some((docente: any) => docente.docenteId === idDocente)
+      );
+
+      // 4. Filtrar paralelos relacionados con los cursos del docente
+      this.paralelos = todosLosParalelos.filter((paralelo: any) =>
+        cursosDelDocente.some((curso: any) => curso.paraleloId === paralelo.id)
+      );
+
+      // Ordenar paralelos alfabéticamente
+      this.paralelos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+      // Seleccionar el paralelo "A" por defecto si existe
+      const paraleloA = this.paralelos.find((paralelo) => paralelo.nombre === 'A');
+      if (paraleloA) {
+        this.paraleloSeleccionado = paraleloA; // Seleccionar paralelo "A"
+      }
+      this.verificarDisponibilidadAsistencia(); // Re-verificar la disponibilidad para el siguiente día
+    } else {
+      // Si no es docente, cargar todos los paralelos
+      this.paralelos = await this.datosFireService.getParalelos();
+
+      // Ordenar paralelos alfabéticamente
+      this.paralelos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+      // Seleccionar el paralelo "A" por defecto si existe
+      const paraleloA = this.paralelos.find((paralelo) => paralelo.nombre === 'A');
+      if (paraleloA) {
+        this.paraleloSeleccionado = paraleloA; // Seleccionar paralelo "A"
+      }
+      // Cargar usuarios asociados
+      this.cargarUsuariosDocentes();
+
     }
-    this.cargarUsuariosDocentes()
     this.cargarUsuariosAlumnos(); // Recargar los usuarios cuando se selecciona un paralelo
     console.log('Paralelos cargados:', this.paralelos);
   } catch (error) {
@@ -124,6 +161,7 @@ async seleccionarNivel(nivel: any): Promise<void> {
     this.paralelos = [];
   }
 }
+
  // Seleccionar periodo y mostrar/ocultar niveles
  async seleccionarPeriodo(periodo: any): Promise<void> {
   if (this.periodoSeleccionado?.id === periodo.id) {
@@ -132,18 +170,44 @@ async seleccionarNivel(nivel: any): Promise<void> {
     this.nivelesVisible = false; // Ocultar niveles si se deselecciona el período
     return;
   }
-  
+
   this.periodoSeleccionado = periodo;
   this.nivelesVisible = true; // Mostrar niveles si se selecciona un período
-  this.cancelarSeleccion()
+  this.cancelarSeleccion();
+
   try {
-    this.niveles = await this.datosFireService.getNivelesPorPeriodo(periodo.id);
-    this.niveles.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    const idDocente = this.authService.getCurrentUser().uid; // Obtener ID del docente actual
+
+    if (this.isDocente) {
+      // 1. Obtener niveles por período
+      const nivelesPorPeriodo = await this.datosFireService.getNivelesPorPeriodo(periodo.id);
+
+      // 2. Obtener todos los cursos
+      const cursos = await this.datosFireService.getCursoProfesor();
+
+      // 3. Filtrar cursos del docente
+      const cursosDelDocente = cursos.filter((curso) =>
+        curso.docentes.some((docente: any) => docente.docenteId === idDocente)
+      );
+
+      // 4. Filtrar niveles relacionados con los cursos del docente
+      this.niveles = nivelesPorPeriodo.filter((nivel: any) =>
+        cursosDelDocente.some((curso: any) => curso.nivelId === nivel.id)
+      );
+
+      // Ordenar niveles por nombre
+      this.niveles.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } else {
+      // Si no es docente, cargar todos los niveles por período
+      this.niveles = await this.datosFireService.getNivelesPorPeriodo(periodo.id);
+      this.niveles.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
   } catch (error) {
     console.error('Error al cargar niveles del período:', error);
     this.niveles = [];
   }
 }
+
   // Cargar matricula desde el servicio
 
   async cargarMatriculas(): Promise<void> {
@@ -443,11 +507,15 @@ async guardarAsistencia(): Promise<void> {
       estadoAsistencia: this.asistencias[usuario.id] || false, // Obtiene el estado del mapa
       alumnoEmail: usuario.email,
       alumnoTelefono: usuario.telefono, // Ejemplo de otro dato del alumno
-      alumnoDireccion: usuario.direccion, // Puedes incluir más campos aquí si lo necesitas
+    
     }));
+      // Verificar que la data no tenga valores nulos o undefined
+      if (asistenciaData.some(a => !a.alumnoId || !a.alumnoNombre)) {
+        alert("Hay datos faltantes en la asistencia.");
+        return;
+      }
 
     const registroAsistencia = {
-      fechaAsistencia: Timestamp.now(),
       alumnos: asistenciaData,
     };
 
@@ -466,32 +534,34 @@ async guardarAsistencia(): Promise<void> {
           await this.datosFireService.inicializarAsistenciasCurso(cursoExistente.id, [registroAsistencia]);
         }
         alert('Asistencia guardada exitosamente');
-
+        this.verificarDisponibilidadAsistencia(); // Re-verificar la disponibilidad para el siguiente día
         // Filtrar usuarios con asistencia `false`
         const usuariosConAsistenciaFalse = asistenciaData.filter(usuario => !usuario.estadoAsistencia);
 
         // Enviar correos a esos usuarios
         if (usuariosConAsistenciaFalse.length > 0) {
           for (const usuario of usuariosConAsistenciaFalse) {
-            const asunto = 'Asistencia no registrada';
-            const mensaje = `Estimado/a ${usuario.alumnoNombre},\n\nSe ha registrado que no has marcado tu asistencia. Por favor, verifica tu estado.\n\nSaludos.`;
-            const email = usuario.alumnoEmail
-            this.enviarCorreo(asunto,mensaje,email)
+           // const asunto = 'Asistencia no registrada';
+            // const mensaje = `Estimado/a ${usuario.alumnoNombre},\n\nSe ha registrado que no has marcado tu asistencia. Por favor, verifica tu estado.\n\nSaludos.`;
+            // const email = usuario.alumnoEmail
+            const nombresUsuariosConFalta = usuariosConAsistenciaFalse.map(usuario => usuario.alumnoNombre).join('\n');
+            alert(`Usuarios con falta:\n${nombresUsuariosConFalta}`);
+                     
           }
         }
-      } else {
-        const cursoProfesorData = {
-          periodoId: this.periodoSeleccionado.id,
-          periodoNombre: this.periodoSeleccionado.nombre,
-          nivelId: this.nivelSeleccionado.id,
-          nivelNombre: this.nivelSeleccionado.nombre,
-          paraleloId: this.paraleloSeleccionado.id,
-          paraleloNombre: this.paraleloSeleccionado.nombre,
-          asistencias: [registroAsistencia],
-        };
-        await this.datosFireService.crearCursoConAsistencia(cursoProfesorData);
-        alert('Curso creado con asistencia');
-      }
+      }// } else {
+      //   const cursoProfesorData = {
+      //     periodoId: this.periodoSeleccionado.id,
+      //     periodoNombre: this.periodoSeleccionado.nombre,
+      //     nivelId: this.nivelSeleccionado.id,
+      //     nivelNombre: this.nivelSeleccionado.nombre,
+      //     paraleloId: this.paraleloSeleccionado.id,
+      //     paraleloNombre: this.paraleloSeleccionado.nombre,
+      //     asistencias: [registroAsistencia],
+      //   };
+      //   await this.datosFireService.crearCursoConAsistencia(cursoProfesorData);
+      //   alert('Curso creado con asistencia');
+      // }
     } catch (error) {
       console.error('Error al guardar la asistencia:', error);
       alert('Error al guardar la asistencia');
@@ -500,17 +570,42 @@ async guardarAsistencia(): Promise<void> {
     alert('Por favor, selecciona todos los campos requeridos.');
   }
 }
-async enviarCorreo(asunto: string, mensaje: string, email: string): Promise<void> {
-  const enviarCorreoFn = this.functions.httpsCallable('enviarCorreoAsistencias');
-  try {
-    const response = await enviarCorreoFn({
-      asunto: asunto,
-      mensaje: mensaje,
-      email: email 
-    }).toPromise();
-    console.log(response);
-  } catch (error) {
-    console.error("Error al enviar el correo:", error);
+
+async verificarDisponibilidadAsistencia(): Promise<void> {
+  const cursoSeleccionado = await this.obtenerCursoSeleccionado();
+  
+  if (!cursoSeleccionado || !cursoSeleccionado.asistencias || cursoSeleccionado.asistencias.length === 0) {
+    console.log('No hay asistencias registradas');
+    this.botonAsistenciaDeshabilitado = false; // Habilitar botón para tomar asistencia
+    return;
+  }
+
+  // Obtener la última asistencia
+  const ultimaAsistencia = cursoSeleccionado.asistencias[cursoSeleccionado.asistencias.length - 1];
+  const ultimaFechaAsistencia = ultimaAsistencia.fechaAsistencia.toDate(); // Convertir Timestamp a Date
+  const fechaActual = new Date();
+
+  // Calcular la diferencia de tiempo entre la última asistencia y la fecha actual
+  const diferencia = fechaActual.getTime() - ultimaFechaAsistencia.getTime();
+  const horasDiferencia = diferencia / (1000 * 3600); // Convertir a horas
+
+  // Si han pasado más de 24 horas desde la última asistencia, habilitar el botón
+  if (horasDiferencia >= 24) {
+    this.botonAsistenciaDeshabilitado = false; // Habilitar botón para tomar asistencia
+    this.mensajeAsistencia = ''; // Limpiar mensaje
+  } else {
+    // Si no han pasado 24 horas, deshabilitar el botón y mostrar mensaje
+    this.botonAsistenciaDeshabilitado = true;
+    this.mensajeAsistencia = 'Asistencia no disponible';
   }
 }
+async obtenerCursoSeleccionado(): Promise<any> {
+  const cursos = await this.datosFireService.getCursoProfesor();
+  return cursos.find(curso => 
+    curso.periodoId === this.periodoSeleccionado.id &&
+    curso.nivelId === this.nivelSeleccionado.id &&
+    curso.paraleloId === this.paraleloSeleccionado.id
+  );
+}
+
 }

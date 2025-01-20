@@ -2,7 +2,7 @@ import { Component,OnInit,ChangeDetectorRef   } from '@angular/core';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule  ,Validators , FormGroup, FormArray  } from '@angular/forms';
-import { Timestamp } from 'firebase/firestore'; // Asegúrate de importar Timestamp
+import { Timestamp } from '@angular/fire/firestore';
 import { FormularionivelesComponent } from '../formularioniveles/formularioniveles.component';
 
 @Component({
@@ -26,6 +26,7 @@ export class FormularioperiodosComponent implements  OnInit {
   detalleSeleccionado: any = null; // Período seleccionado para mostrar detalles
   nivelesDisponibles: any[] = []; // Lista de niveles obtenida de Firestore
   periodoId: string | null = null; // ID del período a modificar
+  fechaInvalida: boolean = false;
 
   constructor(private fb: FormBuilder, private datosFireService: DatosFireService) {
     this.form = this.fb.group({
@@ -34,7 +35,9 @@ export class FormularioperiodosComponent implements  OnInit {
       fechaFin: ['', Validators.required],
       estado: ['activo', Validators.required],
       nivelesSeleccionados: this.fb.array([], Validators.required)
-    });
+    },
+    { validators: this.validarFechas }
+     );
   }
   ngOnInit(): void {
     this.cargarPeriodos();
@@ -46,40 +49,90 @@ export class FormularioperiodosComponent implements  OnInit {
     this.periodosFiltrados = [...this.periodos];
   }
   async cargarNiveles(): Promise<void> {
-    // Cargar niveles desde Firebase
+
     this.nivelesDisponibles = await this.datosFireService.getNiveles();
-
-    // Configurar los niveles seleccionados según el valor porDefecto
-    const nivelesArray = this.nivelesSeleccionados;
-    nivelesArray.clear(); // Limpiar niveles previamente seleccionados
-
-    this.nivelesDisponibles.forEach((nivel: any) => {
+    this.nivelesSeleccionados.clear();  // Limpiar niveles seleccionados
+  
+    // Si estamos en modo edición, se marcan los niveles correspondientes
+    if (this.modoEdicion && this.periodoEditando) {
+      this.cargarNivelesYMarcar(this.periodoEditando.id);
+    } else {
+      // Si estamos creando, marcar los niveles predeterminados
+      this.nivelesDisponibles.forEach((nivel: any) => {
         if (nivel.pordefecto) { // Si el nivel tiene porDefecto como true
-            nivelesArray.push(this.fb.group(nivel)); // Agregar nivel al FormArray
+          this.nivelesSeleccionados.push(this.fb.group(nivel)); // Agregar nivel al FormArray
         }
-    });
-}
-
-
-
-editarPeriodo(periodo: any): void {
-  this.modoEdicion = true;
-  this.mostrarForm = true;
-  this.periodoEditando = periodo;
-
-  this.form.patchValue({
-    nombre: periodo.nombre || '',
-    fechaInicio: this.convertirFecha(periodo.fechaInicio) || '',
-    fechaFin: this.convertirFecha(periodo.fechaFin) || '',
-    estado: periodo.estado || 'activo',
-  });
-
-  // Cargar los niveles asociados al periodo actual usando el servicio
-  if (periodo.id) {
-    this.cargarNivelesYMarcar(periodo.id);
+      });
+    }
   }
-}
+  validarFechas(group: FormGroup): { [key: string]: boolean } | null {
+    const fechaInicio = group.get('fechaInicio')?.value;
+    const fechaFin = group.get('fechaFin')?.value;
 
+    if (fechaInicio && fechaFin) {
+      const inicio = new Date(fechaInicio);
+      const fin = new Date(fechaFin);
+
+      if (fin < inicio) {
+        return { fechaInvalida: true }; // Si la fecha de fin es menor, devuelve un error
+      }
+    }
+    return null; // No hay error
+  }
+
+
+  convertirFecha(fecha: Timestamp | Date): string {
+    let dateObj: Date;
+  
+    if (fecha instanceof Timestamp) {
+      dateObj = fecha.toDate(); // Convierte Timestamp a Date
+    } else if (fecha instanceof Date) {
+      dateObj = fecha;
+    } else {
+      return ''; // Si no es una fecha válida, devuelve una cadena vacía
+    }
+  
+    // Extrae manualmente el año, mes y día en la zona horaria local
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Meses van de 0 a 11
+    const day = String(dateObj.getDate()).padStart(2, '0'); // Día del mes
+  
+    // Devolver solo la fecha en formato "yyyy-mm-dd" sin la parte de la hora
+    return `${year}-${month}-${day}`;
+  }
+  
+  
+
+  editarPeriodo(periodo: any): void {
+   
+    this.periodoEditando = periodo;
+  
+    console.log(this.periodoEditando); // Verifica que las fechas sean de tipo Timestamp
+  
+    // Asegúrate de que la conversión de fecha funciona
+    console.log(periodo.fechaInicio,periodo.fechaFin)
+    const fechaInicio = this.convertirFecha(periodo.fechaInicio)
+    const fechaFin = this.convertirFecha(periodo.fechaFin)
+  
+    // Establecer valores en el formulario
+    this.form.patchValue({
+      nombre: periodo.nombre || '',
+      fechaInicio:fechaInicio,
+      fechaFin: fechaFin,
+      estado: periodo.estado || 'activo',
+    });
+    
+    // Cargar los niveles asociados al periodo actual usando el servicio
+    if (periodo.id) {
+      this.cargarNivelesYMarcar(periodo.id);
+    }
+    this.modoEdicion = true;
+    this.mostrarForm = true;
+
+  }
+  
+  
+  
 // Controlador - Cargar niveles y marcarlos en el formulario
 async cargarNivelesYMarcar(periodoId: string): Promise<void> {
   // Cargar todos los niveles disponibles desde Firebase
@@ -101,10 +154,15 @@ async cargarNivelesYMarcar(periodoId: string): Promise<void> {
   });
 }
 
-  mostrarFormulario(): void {
-    this.mostrarForm = !this.mostrarForm;
-    if (!this.mostrarForm) this.resetForm();
+mostrarFormulario(): void {
+  this.mostrarForm = !this.mostrarForm;
+  if (this.mostrarForm) {
+    this.cargarNiveles(); // Recargar niveles cuando se abre el formulario
+  } else {
+    this.resetForm();
   }
+}
+
 
   resetForm(): void {
     this.form.reset({
@@ -116,7 +174,7 @@ async cargarNivelesYMarcar(periodoId: string): Promise<void> {
     this.periodoEditando = null;
   }
   
- async submit(): Promise<void> {
+async submit(): Promise<void> {
   if (this.form.invalid) {
     window.alert('Por favor, completa correctamente todos los campos.');
     return;
@@ -131,12 +189,13 @@ async cargarNivelesYMarcar(periodoId: string): Promise<void> {
 
   const periodoData = {
     ...formData,
-    fechaInicio: formData.fechaInicio ? Timestamp.fromDate(new Date(`${formData.fechaInicio}T00:00:00`)) : null,
-    fechaFin: formData.fechaFin ? Timestamp.fromDate(new Date(`${formData.fechaFin}T00:00:00`)) : null,
+    fechaInicio: formData.fechaInicio,  // Se deja como string o Date
+    fechaFin: formData.fechaFin,        // Se deja como string o Date
   };
 
-  // Aquí aseguramos que solo estamos extrayendo los niveles seleccionados correctamente
+
   const nivelesSeleccionados = this.nivelesSeleccionados.value.map((nivel: any) => {
+
     return { id: nivel.id, nombre: nivel.nombre };  // Solo guardar id y nombre
   });
 
@@ -158,6 +217,7 @@ async cargarNivelesYMarcar(periodoId: string): Promise<void> {
   this.cargarPeriodos();
   this.resetForm();
 }
+
 
   
   
@@ -196,26 +256,8 @@ async cargarNivelesYMarcar(periodoId: string): Promise<void> {
     };
     this.placeholder = placeholders[this.campoFiltro] || 'Ingrese el valor a buscar';
   }
-  
-  convertirFecha(fecha: Timestamp | Date): string {
-    let dateObj: Date;
-  
-    if (fecha instanceof Timestamp) {
-      dateObj = fecha.toDate(); // Convierte Timestamp a Date
-    } else if (fecha instanceof Date) {
-      dateObj = fecha;
-    } else {
-      return ''; // Si no es una fecha válida, devuelve una cadena vacía
-    }
-  
-    // Extrae manualmente el año, mes y día en la zona horaria local
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Meses van de 0 a 11
-    const day = String(dateObj.getDate()).padStart(2, '0'); // Día del mes
-  
-    return `${year}-${month}-${day}`; // Devuelve la fecha en formato "YYYY-MM-DD"
-  }
-  
+
+
   eliminarPeriodo(id: string, nombre: string): void {
     if (window.confirm(`¿Estás seguro de que deseas eliminar el período "${nombre}"?`)) {
         this.datosFireService.eliminarPeriodo(id).then(() => {
