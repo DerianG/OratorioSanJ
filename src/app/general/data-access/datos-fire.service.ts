@@ -197,7 +197,21 @@ async getMatriculas(): Promise<any[]> {
     return [];
   }
 }
-
+// Método para obtener los datos de matrícula
+async getMatriculaporId(matriculaId: string): Promise<any> {
+  try {
+    const matriculaDocRef = doc(this.firestore, 'matriculas', matriculaId);
+    const matriculaSnapshot = await getDoc(matriculaDocRef);
+    if (matriculaSnapshot.exists()) {
+      return matriculaSnapshot.data();
+    } else {
+      throw new Error('Matrícula no encontrada');
+    }
+  } catch (error) {
+    console.error('Error al obtener datos de matrícula:', error);
+    return {};
+  }
+}
 // Método para obtener las matrículas asociadas a los periodos activos
 async getMatriculasPorUsuarioYPeriodosActivos(usuarioId: string): Promise<any[]> {
   try {
@@ -421,15 +435,89 @@ async inicializarAsistenciasCurso(cursoId: string, asistencias: any[]): Promise<
   });
 }
 
+  // Función para convertir un archivo a base64
+  private async convertToBase64(file: File): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);  // Convierte el archivo a base64
+    });
+  }
+
+  // Método para guardar la justificación con el archivo PDF en Firestore
+  async solicitarJustificacion(matriculaData: any, archivo: File): Promise<void> {
+    try {
+      // Paso 1: Convertir el archivo PDF a base64
+      const archivoBase64 = await this.convertToBase64(archivo);
+
+      // Paso 2: Crear el objeto de datos de la justificación, incluyendo el archivo en base64
+      const periodoConFechas = {
+        ...matriculaData,
+        archivoPDF: archivoBase64,  // Guardar el archivo en base64
+        fechaCreacion: Timestamp.now(),
+      };
+
+      // Paso 3: Guardar los datos en Firestore
+      const matriculasCollection = collection(this.firestore, 'justificaciones');
+      await addDoc(matriculasCollection, periodoConFechas); // Añade el documento con los datos de la justificación
+      console.log('Justificación guardada correctamente');
+    } catch (error) {
+      console.error('Error al crear justificación:', error);
+      throw new Error('Error al crear justificación');
+    }
+  }
+
+   // Obtener las justificaciones
+   async getJustificaciones(): Promise<any[]> {
+    try {
+      const cursosCollection = collection(this.firestore, 'justificaciones');
+      const snapshot = await getDocs(cursosCollection);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+        };
+      });
+    } catch (error) {
+      console.error('Error al obtener justificaciones:', error);
+      return [];
+    }
+  }
+
+  async actualizarAsistenciaCurso(cursoId: string, asistenciasActualizadas: any[]): Promise<void> {
+    try {
+      const cursoRef = doc(this.firestore, 'cursos', cursoId);
+      await updateDoc(cursoRef, { asistencias: asistenciasActualizadas });
+      console.log('Asistencias actualizadas correctamente.');
+    } catch (error) {
+      console.error('Error al actualizar las asistencias:', error);
+      throw new Error('No se pudo actualizar las asistencias.');
+    }
+  }
 
 
-async justificarFalta( justificacion: any): Promise<void> {
-
-
-
+  async justificarFalta(justificacionId: string): Promise<void> {
+    try {
+      // Referencia al documento de la justificación que queremos actualizar
+      const justificacionDocRef = doc(this.firestore, 'justificaciones', justificacionId);
   
-}
-
+      // Obtener la fecha actual
+      const fechaJustificacion = Timestamp.now();
+  
+      // Actualizar el documento con la nueva fecha y el estado 'Justificado'
+      await updateDoc(justificacionDocRef, {
+        estado: 'Justificado',      // Cambiar el estado a "Justificado"
+        fechaJustificacion: fechaJustificacion,  // Añadir la fecha de la justificación
+      });
+  
+      console.log(`Justificación ${justificacionId} actualizada correctamente`);
+    } catch (error) {
+      console.error('Error al justificar la falta:', error);
+      throw new Error('Error al justificar la falta');
+    }
+  }
 
 }
 

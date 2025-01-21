@@ -36,6 +36,14 @@
             <div>Cursos</div>
           </button>
         </div>
+        
+         <!-- justificacion -->
+         <div class="flex-grow-1 mt-4">
+          <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('justificacion')">
+            <img src="justificacion.png" class="img-fluid mb-2" width="80" alt="justificaciones">
+            <div>Justificaciones</div>
+          </button>
+        </div>
       
         <!-- Configuración -->
         <div class="flex-grow-1 mt-4">
@@ -67,6 +75,9 @@
             </div>
             <div *ngIf="vistaSeleccionada === 'cursos'">
               <app-formularioscursos></app-formularioscursos>
+            </div>
+            <div *ngIf="vistaSeleccionada === 'justificacion'">
+              <app-formulariojustificaciones></app-formulariojustificaciones>
             </div>
           </div>
         </div>

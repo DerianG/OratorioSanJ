@@ -6,12 +6,12 @@ import FormulariousuariosComponent from '../formularios/formulariousuarios/formu
 import { FormularioperiodosComponent } from '../formularios/formularioperiodos/formularioperiodos.component';
 import { FormulariosmatriculasComponent } from '../../secretaria/formularios/formulariosmatriculas/formulariosmatriculas.component';
 import { FormularioscursosComponent } from '../../secretaria/formularios/formularioscursos/formularioscursos.component';
-
+import { FormulariojustificacionesComponent } from '../formularios/formulariojustificaciones/formulariojustificaciones.component';
 
 @Component({
   selector: 'app-panel',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, CommonModule, FormulariousuariosComponent, FormularioperiodosComponent, FormulariosmatriculasComponent, FormularioscursosComponent],
+  imports: [FormsModule, ReactiveFormsModule, CommonModule, FormulariousuariosComponent, FormularioperiodosComponent, FormulariosmatriculasComponent, FormulariojustificacionesComponent ,FormularioscursosComponent],
   templateUrl: './panel.component.html',
   styles: ``
 })
