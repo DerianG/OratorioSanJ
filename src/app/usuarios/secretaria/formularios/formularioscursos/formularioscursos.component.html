@@ -231,8 +231,10 @@
                   <th *ngIf="!isDocente">Cédula padre</th>
                   <th *ngIf="!isDocente">Correo padre</th>
                   <th *ngIf="!isDocente">Teléfono</th>          
-                  <th>Estado</th>
+                  <th *ngIf="!isDocente">Estado</th>
+                  <th>Estado faltas</th>
                   <th *ngIf="!isDocente">Fecha de Nacimiento</th>
+                  <th *ngIf="isDocente">Faltas</th>
                   <th *ngIf="isDocente">Asistencia</th>
                 </tr>
               </thead>
@@ -245,14 +247,24 @@
                   <td *ngIf="!isDocente">{{ usuario.cedulaPadre }}</td>
                   <td *ngIf="!isDocente">{{ usuario.emailPadre }}</td>
                   <td *ngIf="!isDocente">{{ usuario.telefono }}</td>
-                  <td>
+                  <td *ngIf="!isDocente">
                     <span class="badge" [ngClass]="{
                       'bg-success': usuario.estado === 'activo',
                       'bg-danger': usuario.estado === 'inactivo'
                     }">
-                      {{ usuario.estado }}
+                     {{ usuario.estado }}
                     </span>
                   </td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': estadofaltas === 'activo',
+                      'bg-warning': estadofaltas === 'advertido',
+                      'bg-danger': estadofaltas === 'reprobado'
+                    }"> 
+                      {{ estadofaltas }}
+                    </span>
+                  </td>
+                  <td *ngIf="isDocente"> {{cantidadFaltas}} </td>
                   <td *ngIf="!isDocente">{{ usuario.fechaNacimiento?.toDate() | date: 'dd/MM/yyyy' }}</td>
                   <td *ngIf="isDocente">
                     <input

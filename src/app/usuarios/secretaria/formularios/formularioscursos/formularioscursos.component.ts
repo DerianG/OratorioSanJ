@@ -11,6 +11,9 @@ interface Docente {
   docenteId: string; // ID del docente
   docenteNombre: string; // Nombre del docente
 }
+interface Falta {
+  fecha: Date;
+}
 @Component({
   selector: 'app-formularioscursos',
   standalone: true,
@@ -48,7 +51,10 @@ export  class FormularioscursosComponent implements OnInit {
   asistencias: { [usuarioId: string]: boolean } = {};
   botonAsistenciaDeshabilitado: boolean = false; // Control para deshabilitar el botón
   mensajeAsistencia: string = ''; // Tiempo restante hasta poder tomar la asistencia
-  
+  faltas: any[] = [];
+  faltasPorUsuario: { [userId: string]: Falta[] } = {};
+  cantidadFaltas:any;
+  estadofaltas:string='activo';
   constructor(
     private fb: FormBuilder,
     private datosFireService: DatosFireService,
@@ -69,14 +75,39 @@ export  class FormularioscursosComponent implements OnInit {
     
   }
   // Cargar períodos activos desde Firestore
-  async cargarPeriodosActivos(): Promise<void> {
-    try {
-      this.periodosActivos = await this.datosFireService.getPeriodosActivos(); // Método en el servicio Firestore
+async cargarPeriodosActivos(): Promise<void> {
+  try {
+    if (this.isDocente) {
+      const idDocente = this.authService.getCurrentUser().uid; 
+      // Obtener los cursos donde está asignado el docente
+      const cursosPData = await this.datosFireService.getCursoProfesor();
+      console.log(cursosPData)
+      // Filtrar los cursos en los que el docente actual está asignado
+      const cursosDelDocente = cursosPData.filter(curso =>
+        curso.docentes.some((docente: Docente) => docente.docenteId === idDocente)
+      );
+
+      console.log(cursosDelDocente)
+      // Extraer los IDs de períodos únicos relacionados con el docente
+      const periodosDocenteIds = new Set(cursosDelDocente.map(curso => curso.periodoId));
+      console.log(periodosDocenteIds)
+      // Obtener todos los períodos activos
+      const periodosActivos = await this.datosFireService.getPeriodosActivos();
+
+      // Filtrar los períodos activos correspondientes al docente
+      this.periodosActivos = periodosActivos
+        .filter(periodo => periodosDocenteIds.has(periodo.id))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } else {
+      // Si no es docente, cargar todos los períodos activos
+      this.periodosActivos = await this.datosFireService.getPeriodosActivos();
       this.periodosActivos.sort((a, b) => a.nombre.localeCompare(b.nombre));
-    } catch (error) {
-      console.error('Error al cargar períodos activos:', error);
     }
+  } catch (error) {
+    console.error('Error al cargar períodos activos:', error);
   }
+}
+
  // Método para seleccionar un paralelo
  async seleccionarParalelo(paralelo: any): Promise<void> {  
   if (this.isDocente) {
@@ -277,17 +308,29 @@ async seleccionarNivel(nivel: any): Promise<void> {
         // Obtener los ids de los usuarios matriculados
         const alumnoIds = matriculasFiltradas.map(matricula => matricula.alumnoId);
         console.log('alumnos ya filtrados:',alumnoIds)
+        
         // Filtrar los usuarios que están matriculados en el período, nivel y paralelo seleccionados
         let usuariosMatriculados = this.usuarios.filter(usuario => alumnoIds.includes(usuario.id));
+
+
+        
+        for (let usuario of usuariosMatriculados) {
+          // Asumimos que tienes una función `getFaltasDelAlumno` que obtiene las faltas del alumno
+          this.cantidadFaltas = await this.getFaltasDelAlumno(usuario);  // Asumiendo que esta función devuelve un número de faltas
+        }
+        
 
         // Asignar los usuarios filtrados a la variable usuariosFiltrados
         this.usuariosFiltrados = usuariosMatriculados;
         this.usuariosFiltrados2 = [...this.usuariosFiltrados]; // Establecer la lista de usuarios filtrados inicial
+
         this.usuariosFiltrados.forEach(usuario => {
           if (this.asistencias[usuario.id] === undefined) {
             this.asistencias[usuario.id] = true; // Por defecto, todos están "no asistieron"
           }
         });
+      
+        
     }
   
   } catch (error) {
@@ -392,7 +435,7 @@ getTituloAsistencia(): string {
     const hora = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Hora en formato HH:MM
     return `Asistencia (${fecha}) - (${hora})`;
   }
-  return 'Lista de Usuarios'; // Título por defecto para no docentes
+  return 'Lista de Alumnos'; // Título por defecto para no docentes
 }
 
 filtrarDocentes(event?: any): void {
@@ -535,7 +578,9 @@ async guardarAsistencia(): Promise<void> {
         }
         alert('Asistencia guardada exitosamente');
         this.verificarDisponibilidadAsistencia(); // Re-verificar la disponibilidad para el siguiente día
+        await this.cargarUsuariosAlumnos();  // Recarga los usuarios y actualiza la tabla
         // Filtrar usuarios con asistencia `false`
+
         const usuariosConAsistenciaFalse = asistenciaData.filter(usuario => !usuario.estadoAsistencia);
 
         // Enviar correos a esos usuarios
@@ -607,5 +652,62 @@ async obtenerCursoSeleccionado(): Promise<any> {
     curso.paraleloId === this.paraleloSeleccionado.id
   );
 }
+
+async getFaltasDelAlumno(usuario: any): Promise<number> {
+  try {
+    const cursos = await this.datosFireService.getCursoProfesor();
+
+    // Filtramos el curso correspondiente al usuario
+    const cursoExistente = cursos.find(curso =>
+      curso.periodoId === this.periodoSeleccionado.id &&
+      curso.nivelId === this.nivelSeleccionado.id &&
+      curso.paraleloId === this.paraleloSeleccionado.id
+    );
+
+    if (cursoExistente && cursoExistente.asistencias) {
+      // Filtrar las faltas de acuerdo con el alumno
+      const faltasDeMatricula = cursoExistente.asistencias
+        .filter((asistencia: any) =>
+          asistencia.alumnos.some((alumno: any) =>
+            alumno.alumnoId === usuario.id && !alumno.estadoAsistencia
+          )
+        )
+        .map((asistencia: any) => {
+          const alumno = asistencia.alumnos.find((al: any) => al.alumnoId === usuario.id);
+          return {
+            fecha: asistencia.fechaAsistencia.toDate(),
+            estadoFalta: alumno?.estadoFalta || 'Pendiente', // Agrega estado de falta
+          };
+        });
+
+      // Obtener el número de faltas
+      const cantidadFaltas = faltasDeMatricula.length;
+
+      // Actualizar el campo estadoFaltas según la cantidad de faltas
+      let estadoFaltas = '';
+      if (cantidadFaltas === 0) {
+        estadoFaltas = 'activo';
+      } else if (cantidadFaltas > 0 && cantidadFaltas < 3) {
+        estadoFaltas = 'advertido';
+      } else if (cantidadFaltas >= 3) {
+        estadoFaltas = 'reprobado';
+      }
+
+      // Actualizar el campo estadoFaltas en el usuario
+       this.estadofaltas = estadoFaltas
+       await this.authService.actualizarUsuarioId(usuario.id, estadoFaltas);
+
+
+      // Retornamos la cantidad de faltas
+      return cantidadFaltas;
+    }
+
+    return 0; // Si no hay faltas
+  } catch (error) {
+    console.error('Error al obtener las faltas del alumno:', error);
+    return 0;
+  }
+}
+
 
 }

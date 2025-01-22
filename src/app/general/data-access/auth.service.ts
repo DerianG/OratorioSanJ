@@ -347,6 +347,23 @@ logout(): Promise<void> {
       return false;
     }
   }
+  async actualizarUsuarioId(usuarioId: string, estadoFaltas: string): Promise<boolean> {
+    try {
+      // Referencia al documento del usuario en Firestore
+      const usuarioDocRef = doc(this.firestore, 'users', usuarioId);
+  
+      // Actualizamos el campo 'estadoFaltas' en el documento del usuario
+      await updateDoc(usuarioDocRef, {
+        estadoFaltas: estadoFaltas,
+       
+      });
+  
+      return true; // Si la actualización fue exitosa
+    } catch (error) {
+      console.error('Error al actualizar el estadoFaltas del usuario:', error);
+      return false; // Si ocurre un error
+    }
+  }
   
 
   // Método para eliminar un usuario

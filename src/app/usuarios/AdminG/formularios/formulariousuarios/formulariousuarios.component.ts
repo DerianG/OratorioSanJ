@@ -79,9 +79,9 @@ async ngOnInit(): Promise<void> {
       contraseña: this.form.get('cedulaPadre')?.value || '',
       confirmContraseña: this.form.get('cedulaPadre')?.value || '',
     });
+    this.establecerContraseñaConCedulaPadre();
   }
 
-  this.setConditionalValidators();
   this.establecerContraseñaConCedulaPadre();
 
   // Establecer validadores cuando el rol cambie
@@ -91,6 +91,7 @@ async ngOnInit(): Promise<void> {
   });
 
 }
+
 setConditionalValidators() {
   const rol = this.form.get('rol')?.value;
   const cedulaControl = this.form.get('cedula');
@@ -158,7 +159,14 @@ setConditionalValidators() {
     togglePasswordVisibility(): void {
       this.passwordVisible = !this.passwordVisible;
     }
+    //cambiartitulo
 
+    getTitulo(): string {
+      if (this.isSecretario) {
+        return 'Alumnos';
+      }
+      return `Usuarios`; // Título por defecto para no docentes
+    }
   // Cargar usuarios desde el servicio
   async cargarUsuarios() {
     try {

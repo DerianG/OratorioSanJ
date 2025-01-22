@@ -233,7 +233,7 @@
 <!-- Card para la Tabla de Usuarios -->
 <div class="card shadow-sm mt-4">
   <div class="card-header text-center bg-primary text-white">
-    <h4>Lista de Usuarios</h4>
+    <h4>Lista de {{ getTitulo() }}</h4>
   </div>
   <div class="card-body">
     <!-- Filtros de búsqueda -->
@@ -289,7 +289,9 @@
             <th>Nombre</th>
             <th>Apellido</th>
             <th>Cédula</th>
+            <th *ngIf="isSecretario">Cédula del padre</th>
             <th>Correo</th>
+            <th *ngIf="isSecretario">correo del padre</th>
             <th>Teléfono</th>
             <th>Rol</th>
             <th>Estado</th>
@@ -310,7 +312,9 @@
             <td>{{ usuario.nombre }}</td>
             <td>{{ usuario.apellido }}</td>
             <td>{{ usuario.cedula }}</td>
+            <td *ngIf="isSecretario">{{ usuario.cedulaPadre }}</td>
             <td>{{ usuario.email }}</td>
+            <td *ngIf="isSecretario">{{ usuario.emailPadre }}</td>
             <td>{{ usuario.telefono }}</td>
             <td>{{ usuario.role }}</td>
             <td>

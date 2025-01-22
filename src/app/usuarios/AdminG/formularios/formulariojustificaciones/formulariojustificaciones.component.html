@@ -41,6 +41,8 @@
                             <th>Nivel</th>
                             <th>Paralelo</th>
                             <th>Fecha de falta</th>
+                            <th>cantidad Faltas</th>
+                            <th>estado alumno</th>
                             <th>Estado justificación</th>   
                             <th>Documento Justificativo</th>                         
                             <th>Acciones</th>
@@ -54,6 +56,16 @@
                             <td>{{ justificacion.nivel }}</td>
                             <td>{{ justificacion.paralelo }}</td>
                             <td>{{ justificacion.fechaFalta?.toDate() | date: 'dd/MM/yyyy'}}</td>
+                            <td > {{cantidadFaltas}} </td>
+                            <td>
+                                <span class="badge" [ngClass]="{
+                                  'bg-success': estadofaltas === 'activo',
+                                  'bg-warning': estadofaltas === 'advertido',
+                                  'bg-danger': estadofaltas === 'reprobado'
+                                }"> 
+                                  {{ estadofaltas }}
+                                </span>
+                            </td>
                             <td>{{ justificacion.estado || 'Pendiente' }}</td>
                             <td>
                                 <button (click)="descargarPDF(justificacion.archivoPDF)" class="btn btn-success">
@@ -61,7 +73,7 @@
                                 </button>
                             </td>
                             <td>
-                                <button (click)="justificar(justificacion.id)" class="btn btn-warning">
+                                <button (click)="justificar(justificacion)" class="btn btn-warning">
                                    Justificar
                                 </button>
                             </td>
