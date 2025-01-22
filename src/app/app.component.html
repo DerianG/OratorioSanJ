@@ -31,7 +31,7 @@
           <a class="nav-link" routerLink="info/actividades" routerLinkActive="">Actividades</a>
         </li>
         <li *ngIf="isLoggedIn" class="nav-item">
-          <span class="nav-link">Bienvenido, {{ user.email }}</span>
+          <span class="nav-link">Bienvenido, {{ user.nombre }}</span>
         </li>
         <li *ngIf="isLoggedIn" class="nav-item">
           <button class="btn btn-success" (click)="logout()">Cerrar sesión</button>

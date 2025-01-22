@@ -32,7 +32,7 @@
                     <strong>Estado:</strong>
                     <strong class="badge" [ngClass]="{
                       'bg-success': (usuario.estadoFaltas === 'activo' || !usuario.estadoFaltas),
-                      'btn-warning': usuario.estadoFaltas === 'advertido',
+                      'bg-warning': usuario.estadoFaltas === 'advertido',
                       'bg-danger': usuario.estadoFaltas === 'reprobado'
                     }">
                       {{ usuario.estadoFaltas || 'activo' }}
@@ -87,7 +87,7 @@
               <li class="list-group-item">
                 <strong>Estado:</strong>  <strong class="badge" [ngClass]="{
                   'bg-success': (usuarioSeleccionado.estadoFaltas === 'activo' || !usuarioSeleccionado.estadoFaltas),
-                  'btn-warning': usuarioSeleccionado.estadoFaltas === 'advertido',
+                  'bg-warning': usuarioSeleccionado.estadoFaltas === 'advertido',
                   'bg-danger': usuarioSeleccionado.estadoFaltas === 'reprobado'}">
                   {{ usuarioSeleccionado.estadoFaltas || 'activo' }}
                 </strong>
@@ -159,13 +159,20 @@
                         <td>{{ matriculaSeleccionada.paraleloNombre }}</td>
                         <td>{{ falta.fecha | date: 'dd/MM/yyyy' }}</td>
                         <td>
-                          <button class="btn btn-warning"  
-                    
-                          [disabled]="falta.estadoFalta === 'en proceso'" 
-                          (click)="justificarFalta(matriculaSeleccionada,falta.fecha)">   
-                          
-                          {{ falta.estadoFalta === 'en proceso' ? 'En proceso' : 'Justificar' }}
-                        </button>
+                          <button  class="btn" 
+                          [ngClass]="{
+                            'btn-success': falta.estadoFalta === 'Justificado',
+                            'btn-secondary': falta.estadoFalta === 'en proceso',
+                            'btn-warning': falta.estadoFalta === 'Pendiente'
+                          }"  
+                          [disabled]="falta.estadoFalta === 'Justificado' || falta.estadoFalta === 'en proceso'" 
+                          (click)="justificarFalta(matriculaSeleccionada, falta.fecha)">
+                          {{ 
+                            falta.estadoFalta === 'Justificado' ? 'Justificado' :
+                            falta.estadoFalta === 'en proceso' ? 'En proceso' :
+                            'Justificar'
+                          }}
+                          </button>
                         </td>
                       </tr>
                       <!-- Mensaje si no hay faltas -->

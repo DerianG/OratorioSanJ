@@ -8,6 +8,7 @@ import { log } from 'firebase-functions/logger';
 import { Timestamp } from 'firebase/firestore';
 interface Falta {
   fecha: Date;
+  estadoFalta:any;
 }
 @Component({
   selector: 'app-panel',
@@ -30,7 +31,7 @@ export  default class PanelComponent {
     matriculaSeleccionada: any = null;  // Para almacenar los detalles del usuario seleccionado
     faltas: any[] = [];
     faltasPorUsuario: { [userId: string]: Falta[] } = {};
-    cantidadFaltas:string='';
+    cantidadFaltas:any;
     cargaAuto: boolean=false;
     verJustificacion: boolean= false;
     faltaJustificacion: any = null;
@@ -152,46 +153,54 @@ export  default class PanelComponent {
       async getFaltasDelAlumno(matricula: any): Promise<void> {
         try {
           const cursos = await this.datosFireService.getCursoProfesor();
-   
+      
           const cursoExistente = cursos.find(curso =>
             curso.periodoId === matricula.periodoId &&
             curso.nivelId === matricula.nivelId &&
             curso.paraleloId === matricula.paraleloId
           );
-   
+      
           if (cursoExistente && cursoExistente.asistencias) {
-            console.log(cursoExistente, cursoExistente.asistencias);
-   
+            // Traer asistencias relevantes: faltas o justificadas
             const faltasDeMatricula: Falta[] = cursoExistente.asistencias
-            .filter((asistencia: any) =>
-              asistencia.alumnos.some((alumno: any) =>
-                alumno.alumnoId === this.usuarioSeleccionado.id && !alumno.estadoAsistencia
+              .filter((asistencia: any) =>
+                asistencia.alumnos.some((alumno: any) =>
+                  alumno.alumnoId === this.usuarioSeleccionado.id &&
+                  (!alumno.estadoAsistencia || alumno.estadoFalta === 'Justificado')
+                )
               )
-            )
-            .map((asistencia: any) => {
-              const alumno = asistencia.alumnos.find((al: any) => al.alumnoId === this.usuarioSeleccionado.id);
-              return {
-                fecha: asistencia.fechaAsistencia.toDate(),
-                estadoFalta: alumno?.estadoFalta || 'Pendiente', // Agregar estado si existe
-                
-              };
-            });
-          
-            // Actualizar las faltas por usuario
+              .map((asistencia: any) => {
+                const alumno = asistencia.alumnos.find((al: any) => al.alumnoId === this.usuarioSeleccionado.id);
+                return {
+                  fecha: asistencia.fechaAsistencia.toDate(),
+                  estadoFalta: alumno?.estadoFalta || 'Pendiente', // Estado predeterminado
+                };
+              });
+
+
+
+            
+      
+            // Actualizar todas las faltas (para la tabla)
             if (!this.faltasPorUsuario[this.usuarioSeleccionado.id]) {
               this.faltasPorUsuario[this.usuarioSeleccionado.id] = [];
             }
-           
-            // Evitar faltas duplicadas
+      
             this.faltasPorUsuario[this.usuarioSeleccionado.id] = [
               ...this.faltasPorUsuario[this.usuarioSeleccionado.id],
               ...faltasDeMatricula.filter(falta =>
                 !this.faltasPorUsuario[this.usuarioSeleccionado.id].some(existingFalta => existingFalta.fecha.getTime() === falta.fecha.getTime())
               )
             ];
-   
-            // Actualizar la cantidad de faltas para el usuario seleccionado
-            this.cantidadFaltas = this.faltasPorUsuario[this.usuarioSeleccionado.id].length.toString();
+      
+            // Separar faltas no justificadas para el conteo
+            const faltasSinJustificar = faltasDeMatricula.filter(falta =>
+              falta.estadoFalta !== 'Justificado' // Contar solo las no justificadas
+            );
+      
+            // Actualizar cantidad de faltas y lista para la tabla
+            this.cantidadFaltas = faltasSinJustificar.length;
+            this.faltas = this.faltasPorUsuario[this.usuarioSeleccionado.id]; // Mostrar todas las faltas en la tabla
           }
         } catch (error) {
           console.error('Error al obtener las faltas del alumno:', error);
@@ -199,7 +208,6 @@ export  default class PanelComponent {
           this.cantidadFaltas = "0";
         }
       }
-   
       convertirFecha(fecha: Timestamp | Date): string {
           let dateObj: Date;
        
