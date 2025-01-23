@@ -9,6 +9,7 @@ import { Timestamp } from 'firebase/firestore';
 interface Falta {
   fecha: Date;
   estadoFalta:any;
+  estadoAsistencia:any;
 }
 @Component({
   selector: 'app-panel',
@@ -174,39 +175,40 @@ export  default class PanelComponent {
                 return {
                   fecha: asistencia.fechaAsistencia.toDate(),
                   estadoFalta: alumno?.estadoFalta || 'Pendiente', // Estado predeterminado
+                  estadoAsistencia: alumno?.estadoAsistencia || false, // Asistencia actual
                 };
-              });
+                              });
+                // Separar y contar faltas no justificadas
+                const faltasSinJustificar = faltasDeMatricula.filter(falta => !falta.estadoAsistencia && falta.estadoFalta !== 'Justificado');
+                this.cantidadFaltas = faltasSinJustificar.length;
 
+                // Actualizar todas las faltas (para la tabla)
+                if (!this.faltasPorUsuario[this.usuarioSeleccionado.id]) {
+                  this.faltasPorUsuario[this.usuarioSeleccionado.id] = [];
+                }
 
+                this.faltasPorUsuario[this.usuarioSeleccionado.id] = [
+                  ...this.faltasPorUsuario[this.usuarioSeleccionado.id],
+                  ...faltasDeMatricula.filter(falta =>
+                    !this.faltasPorUsuario[this.usuarioSeleccionado.id].some(existingFalta => existingFalta.fecha.getTime() === falta.fecha.getTime())
+                  )
+                ];
 
-            
-      
-            // Actualizar todas las faltas (para la tabla)
-            if (!this.faltasPorUsuario[this.usuarioSeleccionado.id]) {
-              this.faltasPorUsuario[this.usuarioSeleccionado.id] = [];
-            }
-      
-            this.faltasPorUsuario[this.usuarioSeleccionado.id] = [
-              ...this.faltasPorUsuario[this.usuarioSeleccionado.id],
-              ...faltasDeMatricula.filter(falta =>
-                !this.faltasPorUsuario[this.usuarioSeleccionado.id].some(existingFalta => existingFalta.fecha.getTime() === falta.fecha.getTime())
-              )
-            ];
-      
-            // Separar faltas no justificadas para el conteo
-            const faltasSinJustificar = faltasDeMatricula.filter(falta =>
-              falta.estadoFalta !== 'Justificado' // Contar solo las no justificadas
-            );
-      
-            // Actualizar cantidad de faltas y lista para la tabla
-            this.cantidadFaltas = faltasSinJustificar.length;
-            this.faltas = this.faltasPorUsuario[this.usuarioSeleccionado.id]; // Mostrar todas las faltas en la tabla
-          }
+                this.faltas = this.faltasPorUsuario[this.usuarioSeleccionado.id]; // Mostrar todas las faltas en la tabla
+                }
         } catch (error) {
           console.error('Error al obtener las faltas del alumno:', error);
           this.faltas = [];
           this.cantidadFaltas = "0";
         }
+      }
+      getFaltasNoJustificadas(usuarioId: string): number {
+        if (this.faltasPorUsuario[usuarioId]) {
+          return this.faltasPorUsuario[usuarioId].filter(falta => 
+            !falta.estadoAsistencia && falta.estadoFalta !== 'Justificado'
+          ).length;
+        }
+        return 0;
       }
       convertirFecha(fecha: Timestamp | Date): string {
           let dateObj: Date;

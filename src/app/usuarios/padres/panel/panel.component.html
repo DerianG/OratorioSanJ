@@ -38,15 +38,14 @@
                       {{ usuario.estadoFaltas || 'activo' }}
                     </strong>
                   </li>
-                  <!-- Detalles adicionales -->
-                  <div *ngIf="faltasPorUsuario[usuario.id] && faltasPorUsuario[usuario.id].length > 0; else noFaltas">
-                    <li><strong>Faltas Totales:</strong> {{ faltasPorUsuario[usuario.id].length }}</li>
+                  <div *ngIf=" getFaltasNoJustificadas(usuario.id)  > 0; else noFaltas">
+                    <li><strong>Faltas :</strong> {{ getFaltasNoJustificadas(usuario.id) }}</li>
                   </div>
                   <ng-template #noFaltas>
                     <li><strong>Faltas Totales:</strong> No hay faltas registradas.</li>
                   </ng-template>
                 </ul>
-
+             
               </div>
 
 
@@ -96,8 +95,8 @@
                 <strong>Teléfono:</strong> {{ usuarioSeleccionado.telefono || 'No disponible' }}
               </li>
                <!-- Detalles adicionales -->
-               <li class="list-group-item" *ngIf="faltasPorUsuario[usuarioSeleccionado.id] && faltasPorUsuario[usuarioSeleccionado.id].length > 0;">
-                   <strong>Faltas Totales:</strong> {{ faltasPorUsuario[usuarioSeleccionado.id].length }}
+               <li class="list-group-item">
+                <strong>Faltas No Justificadas:</strong> {{ getFaltasNoJustificadas(usuarioSeleccionado.id) }}
               </li>
              
                
