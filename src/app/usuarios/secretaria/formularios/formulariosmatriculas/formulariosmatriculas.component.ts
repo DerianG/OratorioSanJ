@@ -4,6 +4,8 @@ import { AuthService } from '../../../../general/data-access/auth.service';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
 import { Timestamp } from '@angular/fire/firestore';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators , FormGroup} from '@angular/forms';
+import { jsPDF }  from 'jspdf';
+
 @Component({
   selector: 'app-formulariosmatriculas',
   standalone: true,
@@ -426,78 +428,140 @@ async editarMatricula(matriculaId: string) {
   
   
   
-
-  async submit() {
-    if (!this.periodoSeleccionado || !this.nivelSeleccionado || !this.paraleloSeleccionado) {
-      alert('Por favor, asegúrate de haber seleccionado un período, nivel y paralelo.');
-      return;
-    }
-  
-    
-    if (this.form.valid) {
-      try {
-        if (this.modoEdicion) {
-          const matriculaData = {
-            matriculaId:this.matriculaEditando.id,
-            periodoId: this.periodoSeleccionado.id,
-            periodoNombre: this.periodoSeleccionado.nombre,
-            nivelId: this.nivelSeleccionado.id,
-            nivelNombre: this.nivelSeleccionado.nombre,
-            paraleloId: this.paraleloSeleccionado.id,
-            paraleloNombre: this.paraleloSeleccionado.nombre,
-            alumnoId: this.alumnoSeleccionado.id,
-            alumnoNombre: this.alumnoSeleccionado.nombre,
-            fechaMatricula: this.form.value.fechaMatricula? Timestamp.fromDate(new Date(`${this.form.value.fechaMatricula}T00:00:00`)) : null,
-            estado: 'activo',
-          };
-            // Actualizar matrícula existente
-            await this.datosFireService.actualizarMatricula(matriculaData);
-            alert('Matrícula actualizada exitosamente');
-  
-        }else {
-          const matriculaData = {
-            periodoId: this.periodoSeleccionado.id,
-            periodoNombre: this.periodoSeleccionado.nombre,
-            nivelId: this.nivelSeleccionado.id,
-            nivelNombre: this.nivelSeleccionado.nombre,
-            paraleloId: this.paraleloSeleccionado.id,
-            paraleloNombre: this.paraleloSeleccionado.nombre,
-            alumnoId: this.alumnoSeleccionado.id,
-            alumnoNombre: this.alumnoSeleccionado.nombre,
-            fechaMatricula: this.form.value.fechaMatricula? Timestamp.fromDate(new Date(`${this.form.value.fechaMatricula}T00:00:00`)) : null,
-            estado: 'activo',
-          };
-          const esUnica = await this.datosFireService.validarMatriculaUnica(matriculaData);
-          if (!esUnica) {
-            alert('El alumno ya está matriculado en este período.');
-            return;
-          }
-      
-          await this.datosFireService.crearMatricula(matriculaData);
-          alert('Matrícula guardada exitosamente');
-          this.cargarMatriculas();
-          this.form.reset();
-          this.alumnoSeleccionado = null;
-          this.modoEdicion = false;
-          this.mostrarForm = false;
-        }
-         this.cargarMatriculas();
-          this.resetForm();
-          this.modoEdicion = false; // Asegura que siempre regrese al modo de creación
-          this.mostrarForm = false; // Oculta el formulario
-        } catch (error) {
-          console.error('Error al guardar la matrícula:', error);
-          alert('Ocurrió un error al guardar la matrícula');
-       
-        }
-    }else {
-      // Lógica para registrar nueva matrícula
-      console.log('Formulario creado con:', this.form.value);
-      // Aquí iría la llamada para registrar una nueva matrícula
-    }
-    
+async submit() {
+  if (!this.periodoSeleccionado || !this.nivelSeleccionado || !this.paraleloSeleccionado) {
+    alert('Por favor, asegúrate de haber seleccionado un período, nivel y paralelo.');
+    return;
   }
-  
-  
-  
+
+ 
+  if (this.form.valid) {
+    try {
+      if (this.modoEdicion) {
+        const matriculaData = {
+          matriculaId:this.matriculaEditando.id,
+          periodoId: this.periodoSeleccionado.id,
+          periodoNombre: this.periodoSeleccionado.nombre,
+          nivelId: this.nivelSeleccionado.id,
+          nivelNombre: this.nivelSeleccionado.nombre,
+          paraleloId: this.paraleloSeleccionado.id,
+          paraleloNombre: this.paraleloSeleccionado.nombre,
+          alumnoId: this.alumnoSeleccionado.id,
+          alumnoNombre: this.alumnoSeleccionado.nombre,
+          fechaMatricula: this.form.value.fechaMatricula? Timestamp.fromDate(new Date(`${this.form.value.fechaMatricula}T00:00:00`)) : null,
+          estado: 'activo',
+        };
+          // Actualizar matrícula existente
+          await this.datosFireService.actualizarMatricula(matriculaData);
+          alert('Matrícula actualizada exitosamente');
+
+      }else {
+        const matriculaData = {
+          periodoId: this.periodoSeleccionado.id,
+          periodoNombre: this.periodoSeleccionado.nombre,
+          nivelId: this.nivelSeleccionado.id,
+          nivelNombre: this.nivelSeleccionado.nombre,
+          paraleloId: this.paraleloSeleccionado.id,
+          paraleloNombre: this.paraleloSeleccionado.nombre,
+          alumnoId: this.alumnoSeleccionado.id,
+          alumnoNombre: this.alumnoSeleccionado.nombre,
+          fechaMatricula: this.form.value.fechaMatricula? Timestamp.fromDate(new Date(`${this.form.value.fechaMatricula}T00:00:00`)) : null,
+          estado: 'activo',
+        };
+        const esUnica = await this.datosFireService.validarMatriculaUnica(matriculaData);
+        if (!esUnica) {
+          alert('El alumno ya está matriculado en este período.');
+          return;
+        }
+   
+        await this.datosFireService.crearMatricula(matriculaData);
+        alert('Matrícula guardada exitosamente');
+
+
+          // Mostrar opción de generar PDF
+          if (confirm('¿Deseas generar un PDF con el reporte de esta matrícula?')) {
+            this.generarPDF(matriculaData);
+          }
+         
+        this.cargarMatriculas();
+        this.form.reset();
+        this.alumnoSeleccionado = null;
+        this.modoEdicion = false;
+        this.mostrarForm = false;
+      }
+       this.cargarMatriculas();
+        this.resetForm();
+        this.modoEdicion = false; // Asegura que siempre regrese al modo de creación
+        this.mostrarForm = false; // Oculta el formulario
+      } catch (error) {
+        console.error('Error al guardar la matrícula:', error);
+        alert('Ocurrió un error al guardar la matrícula');
+     
+      }
+  }else {
+    // Lógica para registrar nueva matrícula
+    console.log('Formulario creado con:', this.form.value);
+    // Aquí iría la llamada para registrar una nueva matrícula
+  }
+ 
+}
+generarPDF(matriculaData: any): void {
+  const doc = new jsPDF();
+
+  // Configurar la imagen para el encabezado
+  const logoURL = 'logo n.png'; // Reemplaza con la ruta o base64 de tu imagen
+  const imageWidth = 50; // Ancho de la imagen
+  const imageHeight = 50; // Alto de la imagen
+
+  // Agregar títulos en el centro del encabezado
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Centro de Oratoria San José Don Bosco', 105, 20, { align: 'center' });
+
+  // Agregar la imagen centrada debajo del primer título
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const imageX = (pageWidth - imageWidth) / 2; // Centrar la imagen
+  doc.addImage(logoURL, 'PNG', imageX, 25, imageWidth, imageHeight);
+
+  // Segundo título
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Certificado de Matrícula', 105, 85, { align: 'center' });
+
+  // Concatenar nombre y apellido del alumno
+  const alumnoNombreCompleto = `${matriculaData.alumnoNombre} ${this.alumnoSeleccionado.apellido}`;
+
+  // Obtener usuario actual y concatenar su nombre completo
+  const usuarioActual = this.authService.getCurrentUser();
+  const usuarioNombreCompleto = `${usuarioActual.nombre} ${usuarioActual.apellido}`;
+
+  // Mensaje principal
+  const fechaMatricula = matriculaData.fechaMatricula.toDate().toLocaleDateString();
+  const periodoNombre = matriculaData.periodoNombre;
+  const nivelNombre = matriculaData.nivelNombre;
+  const paraleloNombre = matriculaData.paraleloNombre;
+  const periodoInicio = this.periodoSeleccionado.fechaInicio.toDate().toLocaleDateString();
+  const periodoFin = this.periodoSeleccionado.fechaFin.toDate().toLocaleDateString();
+
+  const mensaje = `Manta, ${fechaMatricula}
+
+Certificamos que se ha matriculado al alumno ${alumnoNombreCompleto} en el período ${periodoNombre}, nivel ${nivelNombre} y paralelo ${paraleloNombre}. Este período durará desde ${periodoInicio} hasta ${periodoFin}. Agradecemos su compromiso con nuestra institución.
+
+--------------------------
+Matriculado por: ${usuarioNombreCompleto}`;
+
+  // Ajustar el texto para justificarlo
+  const anchoTexto = 170; // Ancho máximo del texto (en mm)
+  const textoDividido: string[] = doc.splitTextToSize(mensaje, anchoTexto);
+
+  // Agregar texto justificado
+  const startY = 95;
+  textoDividido.forEach((line: string, index: number) => {
+    doc.text(line, 20, startY + index * 7);
+  });
+
+  // Descargar el PDF
+  doc.save(`reporte_matricula_${alumnoNombreCompleto}.pdf`);
+}
+
 }
