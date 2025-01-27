@@ -31,11 +31,11 @@
                   <li>
                     <strong>Estado:</strong>
                     <strong class="badge" [ngClass]="{
-                      'bg-success': (usuario.estadoFaltas === 'activo' || !usuario.estadoFaltas),
+                      'bg-success': (usuario.estadoFaltas === 'aprobado' || !usuario.estadoFaltas),
                       'bg-warning': usuario.estadoFaltas === 'advertido',
                       'bg-danger': usuario.estadoFaltas === 'reprobado'
                     }">
-                      {{ usuario.estadoFaltas || 'activo' }}
+                      {{ usuario.estadoFaltas || 'aprobado' }}
                     </strong>
                   </li>
                   <div *ngIf=" getFaltasNoJustificadas(usuario.id)  > 0; else noFaltas">
@@ -85,10 +85,10 @@
               </li>
               <li class="list-group-item">
                 <strong>Estado:</strong>  <strong class="badge" [ngClass]="{
-                  'bg-success': (usuarioSeleccionado.estadoFaltas === 'activo' || !usuarioSeleccionado.estadoFaltas),
+                  'bg-success': (usuarioSeleccionado.estadoFaltas === 'aprobado' || !usuarioSeleccionado.estadoFaltas),
                   'bg-warning': usuarioSeleccionado.estadoFaltas === 'advertido',
                   'bg-danger': usuarioSeleccionado.estadoFaltas === 'reprobado'}">
-                  {{ usuarioSeleccionado.estadoFaltas || 'activo' }}
+                  {{ usuarioSeleccionado.estadoFaltas || 'aprobado' }}
                 </strong>
               </li>
               <li class="list-group-item">

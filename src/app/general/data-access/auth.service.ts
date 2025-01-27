@@ -291,6 +291,23 @@ logout(): Promise<void> {
       return []; // Si hay un error, devolvemos un array vacío
     }
   }
+   // Obtener todos los usuarios registrados por id
+  async obtenerAlumnoPorId(alumnoId: string): Promise<any> {
+    try {
+      const alumnoRef = doc(this.firestore, 'users', alumnoId);  // Buscamos el documento del alumno por su ID
+      const docSnapshot = await getDoc(alumnoRef);  // Recuperamos el documento
+
+      if (docSnapshot.exists()) {
+        return { id: docSnapshot.id, ...docSnapshot.data() };  // Devolvemos los datos del alumno
+      } else {
+        console.error('Alumno no encontrado');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error al obtener los datos del alumno:', error);
+      return null;
+    }
+  }
 
    // Método para actualizar un usuario existente
    async actualizarUsuario(

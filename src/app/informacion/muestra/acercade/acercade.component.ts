@@ -1,13 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
-
 @Component({
-  selector: 'app-principal',
+  selector: 'app-acercade',
   standalone: true,
-  imports: [RouterLink,],
-  templateUrl: './principal.component.html',
+  imports:  [RouterLink,],
+  templateUrl: './acercade.component.html',
   styles: ``
 })
-export default class PrincipalComponent {
+export default class AcercadeComponent {
 
 }

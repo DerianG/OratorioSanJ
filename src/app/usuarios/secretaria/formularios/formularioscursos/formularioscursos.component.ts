@@ -686,7 +686,7 @@ async getFaltasDelAlumno(usuario: any): Promise<number> {
       // Actualizar el campo estadoFaltas según la cantidad de faltas
       let estadoFaltas = '';
       if (cantidadFaltas === 0) {
-        estadoFaltas = 'activo';
+        estadoFaltas = 'aprobado';
       } else if (cantidadFaltas > 0 && cantidadFaltas < 3) {
         estadoFaltas = 'advertido';
       } else if (cantidadFaltas >= 3) {

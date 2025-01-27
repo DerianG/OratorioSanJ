@@ -26,6 +26,14 @@ export default [
         path: 'contacto',
         loadComponent: () => import('./contacto/contacto.component')
     },
+    { 
+        path: 'acercade',
+        loadComponent: () => import('./acercade/acercade.component')
+    },
+    { 
+        path: 'informacionlegal',
+        loadComponent: () => import('./informacionlegal/informacionlegal.component')
+    },
    
 ] as Routes
 

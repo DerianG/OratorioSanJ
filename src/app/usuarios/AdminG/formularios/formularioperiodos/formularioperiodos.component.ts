@@ -1,10 +1,22 @@
 import { Component,OnInit,ChangeDetectorRef   } from '@angular/core';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
+import { AuthService } from '../../../../general/data-access/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule  ,Validators , FormGroup, FormArray  } from '@angular/forms';
 import { Timestamp } from '@angular/fire/firestore';
 import { FormularionivelesComponent } from '../formularioniveles/formularioniveles.component';
+import { jsPDF }  from 'jspdf';
+import 'jspdf-autotable';
 
+// Extensión de la interfaz para incluir lastAutoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    lastAutoTable?: { finalY: number }; // Añadir la propiedad con el tipo esperado
+  }
+}
+interface Nivel {
+  nombre: string;
+}
 @Component({
   selector: 'app-formularioperiodos',
   standalone: true,
@@ -27,8 +39,13 @@ export class FormularioperiodosComponent implements  OnInit {
   nivelesDisponibles: any[] = []; // Lista de niveles obtenida de Firestore
   periodoId: string | null = null; // ID del período a modificar
   fechaInvalida: boolean = false;
+  matriculas: any[] = []; // Aquí se guardarán las matrículas
+  constructor(
+    private fb: FormBuilder,
+    private datosFireService: DatosFireService,
+    private authService: AuthService,
+  ) {
 
-  constructor(private fb: FormBuilder, private datosFireService: DatosFireService) {
     this.form = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(4)]],
       fechaInicio: ['', Validators.required],
@@ -312,5 +329,157 @@ async submit(): Promise<void> {
     const control = this.form.get('nombre');
     return control ? control.hasError('minlength') && control.touched : false;
   }
+
+  async generarReportePeriodo(periodoData: any): Promise<void> {
+    const doc = new jsPDF();
+    
+    // Configurar la imagen para el encabezado
+    const logoURL = 'logo n.png'; // Reemplaza con la ruta o base64 de tu imagen
+    const imageWidth = 50;
+    const imageHeight = 50;
+  
+    // Títulos en el encabezado
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Centro de Oratoria San José Don Bosco', 105, 20, { align: 'center' });
+  
+    // Agregar la imagen centrada
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const imageX = (pageWidth - imageWidth) / 2; // Centrar la imagen
+    doc.addImage(logoURL, 'PNG', imageX, 25, imageWidth, imageHeight);
+  
+    // Segundo título
+    doc.setFontSize(12);
+    doc.text(`Reporte del Período: ${periodoData.nombre}`, 105, 85, { align: 'center' });
+  
+   // Información del período
+const fechaInicio = periodoData.fechaInicio.toDate().toLocaleDateString();
+const fechaFin = periodoData.fechaFin.toDate().toLocaleDateString();
+
+// Definir el tipo de los niveles seleccionados
+const nivelesSeleccionados: Nivel[] = periodoData.nivelesSeleccionados || []; // Asegurarse de que el array no sea undefined
+
+// Crear la lista de niveles numerados
+const nivelesLista = nivelesSeleccionados.map((nivel, index) => `${index + 1}. ${nivel.nombre}`);
+
+// Crear el contenido con una lista de niveles
+const contenido = `Detalles del Período:
+- Nombre: ${periodoData.nombre}
+- Fecha de Inicio: ${fechaInicio}
+- Fecha de Fin: ${fechaFin}
+- Niveles
+`;
+// Dividir y justificar el contenido
+const anchoTexto = 170;
+const textoDividido: string[] = doc.splitTextToSize(contenido, anchoTexto);
+
+// Agregar el contenido al PDF, ahora con justificación a la izquierda
+let startY = 95; // Comienza después de la cabecera
+textoDividido.forEach((line: string, index: number) => {
+  doc.text(line, 20, startY + index * 7); // 20 es la posición X para justificar a la izquierda
+});
+
+// Ajustar la posición Y para los niveles
+startY += textoDividido.length * 6 ; // Ajustar el espacio después de la información del período
+
+// Agregar los niveles en formato de lista
+nivelesLista.forEach((nivel, index) => {
+  doc.text(nivel, 30, startY + index * 7); // Ajustar X para los niveles y Y para la posición de cada nivel
+});
+
+    // Espacio adicional antes de la primera tabla
+    startY += textoDividido.length * 7 + 10; // Ajusta según el número de líneas
+  
+    try {
+      const matriculasData = await this.datosFireService.getMatriculas();
+      this.matriculas = matriculasData.map(matricula => ({
+        ...matricula,
+        fechaMatricula: matricula.fechaMatricula instanceof Timestamp
+          ? matricula.fechaMatricula.toDate()
+          : new Date(matricula.fechaMatricula),
+      }));
+    } catch (error) {
+      console.error('Error al cargar matrículas:', error);
+      return;
+    }
+  
+    const matriculasDelPeriodo = this.matriculas.filter(
+      matricula => matricula.periodoId === periodoData.id
+    );
+  
+    // Agrupar matrículas por nivel
+    const nivelesUnicos = Array.from(new Set(matriculasDelPeriodo.map(m => m.nivelNombre)));
+  
+    // Ordenar los niveles alfabéticamente
+    nivelesUnicos.sort();
+  
+    // Generar una tabla para cada nivel
+    for (const nivel of nivelesUnicos) {
+      const matriculasDelNivel = matriculasDelPeriodo.filter(m => m.nivelNombre === nivel);
+  
+      // Ordenar las matrículas por paralelo (alfabéticamente)
+      matriculasDelNivel.sort((a, b) => a.paraleloNombre.localeCompare(b.paraleloNombre));
+  
+      // Título del nivel
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Nivel: ${nivel}`, 20, startY);
+  
+      // Definir columnas y filas de la tabla
+      const columns = ['Alumno', 'Fecha Matrícula', 'Paralelo', 'Estado'];
+      const rows = [];
+  
+      for (const matricula of matriculasDelNivel) {
+        // Obtener los datos del alumno usando su alumnoId
+        const alumnoData = await this.authService.obtenerAlumnoPorId(matricula.alumnoId);
+  
+        if (alumnoData) {
+          let estadoFaltas = alumnoData.estadoFaltas;
+  
+          // Verificar si el estadoFaltas existe, de lo contrario dejar vacío
+          if (!estadoFaltas) {
+            estadoFaltas = ''; // Si no existe el estado, dejamos vacío
+          }
+  
+          // Lógica para el color de subrayado según el estado
+          const estadoText = estadoFaltas.toLowerCase() === 'reprobado' 
+            ? 'Reprobado' 
+            : estadoFaltas || 'Aprobado'; // Si no hay estado, ponemos "Aprobado"
+          
+          // Decidir color del texto según el estado
+          const estadoColor = estadoFaltas.toLowerCase() === 'reprobado' ? [255, 0, 0] : [0, 128, 0]; // Rojo para reprobado, verde para aprobado o cualquier otro
+  
+          // Añadir fila con el texto y el color en la columna de Estado
+          rows.push([
+            `${alumnoData.nombre} ${alumnoData.apellido}`,
+            matricula.fechaMatricula.toLocaleDateString(),
+            matricula.paraleloNombre,
+            { content: estadoText, styles: { textColor: estadoColor, textDecoration: 'underline' } }, // Subrayado y color
+          ]);
+        }
+      }
+  
+      // Dibujar la tabla usando autoTable
+      // @ts-ignore: Ignore TypeScript error for jsPDF autotable
+      doc.autoTable({
+        head: [columns],
+        body: rows,
+        startY: startY + 5,
+        theme: 'striped',
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [22, 160, 133] }, // Verde claro
+      });
+  
+      // Actualizar la posición Y después de la tabla, añadiendo un espacio extra
+      startY = (doc.lastAutoTable?.finalY ?? startY) + 15; // Añade espacio extra entre tablas
+    }
+  
+    // Guardar el PDF
+    doc.save(`reporte_periodo_${periodoData.nombre}.pdf`);
+  }
+  
+  
+  
+
+  
   
 }
