@@ -6,6 +6,8 @@ import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators 
 import { Subscription } from 'rxjs';
 import { log } from 'firebase-functions/logger';
 import { Timestamp } from 'firebase/firestore';
+import { jsPDF }  from 'jspdf';
+
 @Component({
   selector: 'app-formulariojustificaciones',
   standalone: true,
@@ -184,6 +186,9 @@ export class FormulariojustificacionesComponent {
   
       // Recargar las justificaciones
       this.loadJustificaciones();
+      if (confirm('¿Deseas generar un PDF con el reporte de esta justificacion?')) {
+        this.generarReporteJustificacion(justificacion);
+      }
     } catch (error) {
       window.alert('Error al justificar la falta');
       console.error('Error al justificar la falta:', error);
@@ -296,5 +301,94 @@ export class FormulariojustificacionesComponent {
       return 0;
     }
   }
+
+  async generarReporteJustificacion(justificacion: any): Promise<void> {
+    const doc = new jsPDF();
+    
+    // Obtener usuario actual y concatenar su nombre completo
+    const usuarioActual = this.authService.getCurrentUser();
+    const usuarioNombreCompleto = `${usuarioActual.nombre} ${usuarioActual.apellido}`;
+  
+    // Obtener la fecha actual
+    const fechaActual = new Date().toLocaleDateString();
+  
+    // Configurar la imagen para el encabezado
+    const logoURL = 'logo n.png'; // Ruta de la imagen
+    const imageWidth = 50;
+    const imageHeight = 50;
+    
+    // Títulos en el encabezado
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Centro de Oratoria San José Don Bosco', 105, 20, { align: 'center' });
+  
+    // Agregar la imagen centrada
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const imageX = (pageWidth - imageWidth) / 2;
+    doc.addImage(logoURL, 'PNG', imageX, 25, imageWidth, imageHeight);
+    
+    // Segundo título
+    doc.setFontSize(12);
+    doc.text(`Reporte de Justificación de Falta`, 105, 85, { align: 'center' });
+    
+    // Obtener la data del alumno
+    const alumnoData = await this.authService.obtenerAlumnoPorId(justificacion.alumnoId);
+  
+    // Obtener información de la justificación
+    const fechaFalta = justificacion.fechaFalta.toDate().toLocaleDateString();
+  
+    const contenido = `Detalles de la Justificación:
+  - Alumno: ${alumnoData.nombre} ${alumnoData.apellido}
+  - Fecha de la Falta: ${fechaFalta}
+  - Curso: ${justificacion.nivel} - ${justificacion.paralelo}
+  - Fecha de Justificación: ${fechaActual}
+  - Estado: Justificado`;
+  
+    // Dividir y justificar el contenido
+    const anchoTexto = 170;
+    const textoDividido: string[] = doc.splitTextToSize(contenido, anchoTexto);
+  
+    // Agregar el contenido al PDF
+    let startY = 95;
+    textoDividido.forEach((line: string, index: number) => {
+      doc.text(line, 20, startY + index * 7);
+    });
+  
+    startY += textoDividido.length * 7 + 10;
+  
+    // **Tabla de detalles de la justificación**
+    const columns = ['Fecha de Falta', 'Alumno', 'Curso', 'Estado'];
+    const rows = [[
+      fechaFalta,
+      `${alumnoData.nombre} ${alumnoData.apellido}`,
+      `${justificacion.nivel} - ${justificacion.paralelo}`,
+      'Justificado'
+    ]];
+  
+    // Dibujar la tabla con autoTable
+    // @ts-ignore: Ignore TypeScript error for jsPDF autotable
+    doc.autoTable({
+      head: [columns],
+      body: rows,
+      startY: startY + 5,
+      theme: 'striped',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [22, 160, 133] } // Verde claro
+    });
+  
+    // Actualizar la posición Y después de la tabla, añadiendo un espacio extra
+    startY = (doc.lastAutoTable?.finalY ?? startY) + 15; // Añade espacio extra entre tablas
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    
+    doc.text(`
+    --------------------------
+    Justificado por: ${usuarioNombreCompleto}`, 20, startY + 10);
+  
+    // Guardar el PDF
+    doc.save(`reporte_justificacion_${alumnoData.nombre}.pdf`);
+  }
+  
+  
 }
 
