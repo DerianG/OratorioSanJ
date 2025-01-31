@@ -40,6 +40,10 @@ export class FormulariosmatriculasComponent implements OnInit {
   matriculasFiltradas: any[] = []; // Lista de matrículas después del filtrado
   periodosCargados: boolean = false;
 
+  fechaLocal = new Date( new Date().getTime() -  new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 10);
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
@@ -51,7 +55,7 @@ export class FormulariosmatriculasComponent implements OnInit {
     alumnoSeleccionado: ['', Validators.required], 
     campoFiltroAlumno: ['nombre'],  // Campo de filtro alumno agregado
     campoFiltroMatricula: ['nombre'],
-    fechaMatricula: [new Date().toISOString().slice(0, 10)],
+    fechaMatricula: [this.fechaLocal]
  });  // Agregar el validador de contraseñas
 }
 
@@ -184,7 +188,7 @@ mostrarFormulario(): void {
     paraleloSeleccionado: null,
     alumnoSeleccionado: null,
     campoFiltroAlumno:'nombre',
-    fechaMatricula: new Date().toISOString().split('T')[0],
+    fechaMatricula: [this.fechaLocal]
   });
 }
 
@@ -425,7 +429,72 @@ async editarMatricula(matriculaId: string) {
   }
 }
 
-  
+async generarReporte(matriculaId: string) {
+  this.resetForm(); // Reinicia el formulario
+  this.matriculaEditando = null; // Limpiar antes de obtener la matrícula
+  try {
+    // Obtener todas las matrículas y buscar la que corresponde
+    const matriculas = await this.datosFireService.getMatriculas();
+    const matricula = matriculas.find(m => m.id === matriculaId);
+   
+    if (!matricula) {
+      alert('Matrícula no encontrada.');
+      return;
+    }
+
+    // Obtener los períodos activos
+    const periodosActivos = await this.datosFireService.getPeriodosActivos();
+    const periodos = periodosActivos;
+
+    // Buscar el periodo seleccionado
+    this.periodoSeleccionado = periodos.find(p => p.id === matricula.periodoId);
+    if ( this.periodoSeleccionado) {
+      
+      // Obtener los niveles para este periodo
+      const niveles = await this.datosFireService.getNivelesPorPeriodo( this.periodoSeleccionado.id);
+      const niveles2 = niveles;
+
+      // Asignar el nivel seleccionado
+      this.nivelSeleccionado = niveles2.find(n => n.id === matricula.nivelId) || {};
+      // Obtener los paralelos
+      const paralelos = await this.datosFireService.getParalelos();
+      const paralelos2 = paralelos;
+      // Asignar el paralelo seleccionado
+      this.paraleloSeleccionado = paralelos2.find(p => p.id === matricula.paraleloId) || {};
+
+      // Actualizar el formulario con los valores de la matrícula
+      this.form.patchValue({
+        fechaMatricula: this.convertirFecha(matricula.fechaMatricula),
+      });
+      
+      // Obtener los usuarios
+      const usuarios = await this.authService.obtenerUsuarios();
+      // Asignar el alumno seleccionado
+      this.alumnoSeleccionado = usuarios.find(n => n.id === matricula.alumnoId) || {};
+    
+    
+      const matriculaData = {
+        periodoId:  this.periodoSeleccionado.id,
+        periodoNombre:  this.periodoSeleccionado.nombre,
+        nivelId:  this.nivelSeleccionado.id,
+        nivelNombre:  this.nivelSeleccionado.nombre,
+        paraleloId:  this.paraleloSeleccionado.id,
+        paraleloNombre:  this.paraleloSeleccionado.nombre,
+        alumnoId: this.alumnoSeleccionado.id,
+        alumnoNombre: this.alumnoSeleccionado.nombre,
+        fechaMatricula: this.form.value.fechaMatricula? Timestamp.fromDate(new Date(`${this.form.value.fechaMatricula}T00:00:00`)) : null,
+        estado: 'activo',
+      };
+        // Marcar el formulario como sucio y tocado
+
+     this.generarPDF(matriculaData)
+    } else {
+      
+    }
+  } catch (error) {
+    console.error('Error al generar reporte matrícula:', error);
+  }
+}
   
   
 async submit() {
@@ -454,6 +523,10 @@ async submit() {
           // Actualizar matrícula existente
           await this.datosFireService.actualizarMatricula(matriculaData);
           alert('Matrícula actualizada exitosamente');
+           // Mostrar opción de generar PDF
+           if (confirm('¿Deseas generar un PDF con el reporte de esta matrícula?')) {
+            this.generarPDF(matriculaData);
+          }
 
       }else {
         const matriculaData = {
@@ -562,6 +635,7 @@ Matriculado por: ${usuarioNombreCompleto}`;
 
   // Descargar el PDF
   doc.save(`reporte_matricula_${alumnoNombreCompleto}.pdf`);
+  this.resetForm(); // Reinicia el formulario
 }
 
 }

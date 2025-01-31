@@ -7,7 +7,10 @@ import { Subscription } from 'rxjs';
 import { log } from 'firebase-functions/logger';
 import { Timestamp } from 'firebase/firestore';
 import { jsPDF }  from 'jspdf';
-
+interface Falta {
+  fecha: Date;
+  estadoAsistencia:any;
+}
 @Component({
   selector: 'app-formulariojustificaciones',
   standalone: true,
@@ -23,6 +26,7 @@ export class FormulariojustificacionesComponent {
   justificacionesFiltradas: any[] = [];
   cantidadFaltas:any;
   estadofaltas:string='';
+  faltasPorUsuario: { [userId: string]: { faltas: Falta[], estadoFalta: string } } = {};
   constructor(
     private datosFire: DatosFireService,
     private authService: AuthService,
@@ -250,57 +254,64 @@ export class FormulariojustificacionesComponent {
   }
 
 
-  async getFaltasDelAlumno(usuarioId: any, curso:any): Promise<number> {
-    try {
-      
-  
-      // Filtramos el curso correspondiente al usuario
-      const cursoExistente = curso
-  
-      if (cursoExistente && cursoExistente.asistencias) {
-        // Filtrar las faltas de acuerdo con el alumno
-        const faltasDeMatricula = cursoExistente.asistencias
-          .filter((asistencia: any) =>
-            asistencia.alumnos.some((alumno: any) =>
-              alumno.alumnoId === usuarioId && !alumno.estadoAsistencia
-            )
-          )
-          .map((asistencia: any) => {
-            const alumno = asistencia.alumnos.find((al: any) => al.alumnoId === usuarioId);
-            return {
-              fecha: asistencia.fechaAsistencia.toDate(),
-              estadoFalta: alumno?.estadoFalta || 'Pendiente', // Agrega estado de falta
-            };
-          });
-  
-        // Obtener el número de faltas
-        const cantidadFaltas = faltasDeMatricula.length;
-  
-        // Actualizar el campo estadoFaltas según la cantidad de faltas
-        let estadoFaltas = '';
-        if (cantidadFaltas === 0) {
-          estadoFaltas = 'aprobado';
-        } else if (cantidadFaltas > 0 && cantidadFaltas < 3) {
-          estadoFaltas = 'advertido';
-        } else if (cantidadFaltas >= 3) {
-          estadoFaltas = 'reprobado';
+ async getFaltasDelAlumno(usuarioId: any, curso: any): Promise<number> {
+  try {
+    const cursoExistente = curso;
+
+    if (cursoExistente && cursoExistente.asistencias) {
+        // Inicializar el objeto si no existe
+        if (!this.faltasPorUsuario[usuarioId]) {
+          this.faltasPorUsuario[usuarioId] = { faltas: [], estadoFalta: '' };
         }
-  
-        // Actualizar el campo estadoFaltas en el usuario
-        
-         await this.authService.actualizarUsuarioId(usuarioId, estadoFaltas);
-        this.estadofaltas = estadoFaltas
-        this.cantidadFaltas = cantidadFaltas
-        // Retornamos la cantidad de faltas
-        return cantidadFaltas;
+      // Filtrar las faltas de acuerdo con el alumno
+     
+      const faltasDeMatricula: Falta[] = cursoExistente.asistencias
+        .filter((asistencia: any) =>
+          asistencia.alumnos.some((alumno: any) =>
+            alumno.alumnoId === usuarioId && !alumno.estadoAsistencia
+          )
+        )
+        .map((asistencia: any) => {
+          const alumno = asistencia.alumnos.find((al: any) => al.alumnoId === usuarioId);
+          return {
+            fecha: asistencia.fechaAsistencia.toDate(),         
+            estadoAsistencia: alumno?.estadoAsistencia || false, // Agregar estado de asistencia
+          };
+        });
+
+      
+      // Guardar las faltas en `faltasPorUsuario`
+      this.faltasPorUsuario[usuarioId].faltas = faltasDeMatricula;
+      
+      // Obtener el número de faltas
+      const cantidadFaltas = faltasDeMatricula.length;
+
+      // Determinar el estado de las faltas
+      let estadoFaltas = '';
+      if (cantidadFaltas === 0) {
+        estadoFaltas = 'aprobado';
+      } else if (cantidadFaltas > 0 && cantidadFaltas < 3) {
+        estadoFaltas = 'advertido';
+      } else if (cantidadFaltas >= 3) {
+        estadoFaltas = 'reprobado';
       }
-  
-      return 0; // Si no hay faltas
-    } catch (error) {
-      console.error('Error al obtener las faltas del alumno:', error);
-      return 0;
+
+      // Actualizar el estado del usuario en la base de datos
+      await this.authService.actualizarUsuarioId(usuarioId, estadoFaltas);
+      this.faltasPorUsuario[usuarioId].estadoFalta = estadoFaltas
+      // Guardar en variables de clase (opcional)
+      this.cantidadFaltas = cantidadFaltas;
+
+      return cantidadFaltas;
     }
+
+    return 0; // Si no hay faltas
+  } catch (error) {
+    console.error('Error al obtener las faltas del alumno:', error);
+    return 0;
   }
+}
+
 
   async generarReporteJustificacion(justificacion: any): Promise<void> {
     const doc = new jsPDF();

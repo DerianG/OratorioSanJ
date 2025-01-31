@@ -56,14 +56,14 @@
                             <td>{{ justificacion.nivel }}</td>
                             <td>{{ justificacion.paralelo }}</td>
                             <td>{{ justificacion.fechaFalta?.toDate() | date: 'dd/MM/yyyy'}}</td>
-                            <td > {{cantidadFaltas}} </td>
+                            <td > {{faltasPorUsuario[justificacion.alumnoId].faltas.length}} </td>
                             <td>
                                 <span class="badge" [ngClass]="{
-                                  'bg-success': estadofaltas === 'aprobado',
-                                  'bg-warning': estadofaltas === 'advertido',
-                                  'bg-danger': estadofaltas === 'reprobado'
+                                  'bg-success': faltasPorUsuario[justificacion.alumnoId].estadoFalta === 'aprobado',
+                                  'bg-warning': faltasPorUsuario[justificacion.alumnoId].estadoFalta === 'advertido',
+                                  'bg-danger': faltasPorUsuario[justificacion.alumnoId].estadoFalta === 'reprobado'
                                 }"> 
-                                  {{ estadofaltas }}
+                                  {{ faltasPorUsuario[justificacion.alumnoId].estadoFalta }}
                                 </span>
                             </td>
                             <td>{{ justificacion.estado || 'Pendiente' }}</td>

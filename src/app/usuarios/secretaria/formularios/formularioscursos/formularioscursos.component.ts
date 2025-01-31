@@ -13,6 +13,7 @@ interface Docente {
 }
 interface Falta {
   fecha: Date;
+  estadoAsistencia:any;
 }
 @Component({
   selector: 'app-formularioscursos',
@@ -52,9 +53,9 @@ export  class FormularioscursosComponent implements OnInit {
   botonAsistenciaDeshabilitado: boolean = false; // Control para deshabilitar el botón
   mensajeAsistencia: string = ''; // Tiempo restante hasta poder tomar la asistencia
   faltas: any[] = [];
-  faltasPorUsuario: { [userId: string]: Falta[] } = {};
+  faltasPorUsuario: { [userId: string]: { faltas: Falta[], estadoFalta: string } } = {};
   cantidadFaltas:any;
-  estadofaltas:string='activo';
+
   constructor(
     private fb: FormBuilder,
     private datosFireService: DatosFireService,
@@ -632,7 +633,7 @@ async verificarDisponibilidadAsistencia(): Promise<void> {
 
   // Calcular la diferencia de tiempo entre la última asistencia y la fecha actual
   const diferencia = fechaActual.getTime() - ultimaFechaAsistencia.getTime();
-  const horasDiferencia = diferencia / (1000 * 3600); // Convertir a horas
+  const horasDiferencia = 35//diferencia / (1000 * 3600); // Convertir a horas
 
   // Si han pasado más de 24 horas desde la última asistencia, habilitar el botón
   if (horasDiferencia >= 24) {
@@ -665,6 +666,10 @@ async getFaltasDelAlumno(usuario: any): Promise<number> {
     );
 
     if (cursoExistente && cursoExistente.asistencias) {
+      // Inicializar el objeto si no existe
+      if (!this.faltasPorUsuario[usuario.id]) {
+        this.faltasPorUsuario[usuario.id] = { faltas: [], estadoFalta: '' };
+      }
       // Filtrar las faltas de acuerdo con el alumno
       const faltasDeMatricula = cursoExistente.asistencias
         .filter((asistencia: any) =>
@@ -679,7 +684,7 @@ async getFaltasDelAlumno(usuario: any): Promise<number> {
             estadoFalta: alumno?.estadoFalta || 'Pendiente', // Agrega estado de falta
           };
         });
-
+      this.faltasPorUsuario[usuario.id].faltas = faltasDeMatricula;
       // Obtener el número de faltas
       const cantidadFaltas = faltasDeMatricula.length;
 
@@ -694,9 +699,9 @@ async getFaltasDelAlumno(usuario: any): Promise<number> {
       }
 
       // Actualizar el campo estadoFaltas en el usuario
-       this.estadofaltas = estadoFaltas
+       
        await this.authService.actualizarUsuarioId(usuario.id, estadoFaltas);
-
+       this.faltasPorUsuario[usuario.id].estadoFalta = estadoFaltas
 
       // Retornamos la cantidad de faltas
       return cantidadFaltas;

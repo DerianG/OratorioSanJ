@@ -165,25 +165,28 @@
                                 </span>
                             </td>
                             <td>
-                                <button 
-                                    *ngIf="periodo.estado !== 'finalizado'" 
-                                    class="btn btn-warning btn-sm me-2" 
-                                    (click)="editarPeriodo(periodo)">
-                                    Modificar
-                                </button>
-                                <button 
-                                    class="btn btn-danger btn-sm me-2" 
-                                    (click)="eliminarPeriodo(periodo.id, periodo.nombre)">
-                                    Eliminar
-                                </button>
-                                <!-- <button 
-                                    class="btn btn-info btn-sm" 
-                                    (click)="verDetalle(periodo)">
-                                    Detalle
-                                </button> -->
-                                <button class="btn btn-info btn-sm"  (click)="generarReportePeriodo(periodo)">
-                                    Generar Reporte
-                                </button>
+                                <div class="d-flex gap-3">
+                                    <button 
+                                        *ngIf="periodo.estado !== 'finalizado'" 
+                                        class="btn btn-warning btn-sm flex-fill" 
+                                        (click)="editarPeriodo(periodo)">
+                                        Modificar
+                                    </button>
+                                    <button 
+                                        *ngIf="periodo.estado !== 'finalizado'" 
+                                        class="btn btn-danger btn-sm flex-fill" 
+                                        (click)="eliminarPeriodo(periodo.id, periodo.nombre)">
+                                        Eliminar
+                                    </button>
+                                    <!-- <button 
+                                        class="btn btn-info btn-sm" 
+                                        (click)="verDetalle(periodo)">
+                                        Detalle
+                                    </button> -->
+                                    <button class="btn btn-primary flex-fill"  (click)="generarReportePeriodo(periodo)">
+                                        Reporte
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>

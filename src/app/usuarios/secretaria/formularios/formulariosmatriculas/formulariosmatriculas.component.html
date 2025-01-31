@@ -243,9 +243,10 @@
                     <tbody>
                         <tr *ngFor="let matricula of matriculas of matriculasFiltradas">
                             <td>
-                                <div class="d-flex gap-2">
+                                <div class="d-flex gap-3">
                                     <button class="btn btn-warning btn-sm flex-fill" (click)="editarMatricula(matricula.id)">Modificar</button>
                                     <button class="btn btn-danger btn-sm flex-fill" (click)="eliminarMatricula(matricula.id)">Eliminar</button>
+                                    <button class="btn btn-primary btn-sm flex-fill" (click)="generarReporte(matricula.id)">Reporte</button>
                                 </div>
                             </td>
                             <td>{{ matricula.id }}</td>

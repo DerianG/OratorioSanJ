@@ -4,8 +4,9 @@ import { AuthService } from '../../../general/data-access/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators , FormGroup} from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { log } from 'firebase-functions/logger';
+import { jsPDF }  from 'jspdf';
 import { Timestamp } from 'firebase/firestore';
+
 interface Falta {
   fecha: Date;
   estadoFalta:any;
@@ -358,6 +359,85 @@ export  default class PanelComponent {
           }
         }
         
+        async generarReporte(matricula: any): Promise<void> {
+          const doc = new jsPDF();
+        
+          // Obtener los usuarios
+          const usuarios = await this.authService.obtenerUsuarios();
+        
+          // Asignar el alumno seleccionado
+          const alumnoSeleccionado = usuarios.find(n => n.id === matricula.alumnoId) || {};
+        
+          // Obtener el estado de faltas
+          const estadoFaltas = alumnoSeleccionado.estadoFaltas ?? 'aprobado';
+          let estadoTexto = estadoFaltas;
+          let color = [0, 128, 0]; // Verde por defecto (aprobado)
+        
+          if (estadoFaltas === 'advertido') {
+            color = [255, 165, 0]; // Naranja (advertido)
+          } else if (estadoFaltas === 'reprobado') {
+            color = [255, 0, 0]; // Rojo (reprobado)
+          }
+        
+          // Configurar la imagen para el encabezado
+          const logoURL = 'logo n.png'; // Reemplaza con la ruta o base64 de tu imagen
+          const imageWidth = 50;
+          const imageHeight = 50;
+        
+          // Agregar títulos en el centro del encabezado
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Centro de Oratoria San José Don Bosco', 105, 20, { align: 'center' });
+        
+          // Agregar la imagen centrada
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const imageX = (pageWidth - imageWidth) / 2;
+          doc.addImage(logoURL, 'PNG', imageX, 25, imageWidth, imageHeight);
+        
+           // Datos del alumno
+           const alumnoNombreCompleto = `${alumnoSeleccionado.nombre} ${alumnoSeleccionado.apellido}`;
+           const alumnoCorreo = alumnoSeleccionado.correo || 'No disponible';
+           const alumnoCedula = alumnoSeleccionado.cedula || 'No disponible';
+         
+           // Datos de la matrícula
+           const periodoNombre = matricula.periodoNombre;
+           const nivelNombre = matricula.nivelNombre;
+           const paraleloNombre = matricula.paraleloNombre;
+
+
+          // Segundo título
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Reporte de Información del Alumno ${alumnoSeleccionado.nombre} en el periodod ${periodoNombre}`, 105, 85, { align: 'center' });
+        
+         
+        
+          // Agregar información del alumno
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Nombre del Alumno: ${alumnoNombreCompleto}`, 20, 95);
+          doc.text(`Correo: ${alumnoCorreo}`, 20, 105);
+          doc.text(`Cédula: ${alumnoCedula}`, 20, 115);
+          doc.text(`Periodo: ${periodoNombre}`, 20, 125);
+          doc.text(`Nivel: ${nivelNombre}`, 20, 135);
+          doc.text(`Paralelo: ${paraleloNombre}`, 20, 145);
+        
+          // Agregar estado de faltas con color solo en el valor del estado
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0, 0, 0);
+          doc.text(`Estado de Faltas: `, 20, 155); // Texto normal en negro
+        
+          // Texto del estado con color
+          doc.setTextColor(color[0], color[1], color[2]); // Aplicar color
+          doc.text(estadoTexto, 60, 155); // Solo el estado en color
+        
+          // Guardar el PDF
+          doc.save(`reporte_informacion_${alumnoNombreCompleto}.pdf`);
+          
+        
+        }
+        
+     
         
         
         

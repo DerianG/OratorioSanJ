@@ -257,14 +257,15 @@
                   </td>
                   <td>
                     <span class="badge" [ngClass]="{
-                      'bg-success': estadofaltas === 'activo',
-                      'bg-warning': estadofaltas === 'advertido',
-                      'bg-danger': estadofaltas === 'reprobado'
-                    }"> 
-                      {{ estadofaltas }}
-                    </span>
+                      'bg-success': faltasPorUsuario[usuario.id].estadoFalta  === 'aprobado',
+                      'bg-warning': faltasPorUsuario[usuario.id].estadoFalta  === 'advertido',
+                      'bg-danger': faltasPorUsuario[usuario.id].estadoFalta  === 'reprobado'
+                    }">
+                    {{ faltasPorUsuario[usuario.id].estadoFalta }}
+                  </span>
                   </td>
-                  <td *ngIf="isDocente"> {{cantidadFaltas}} </td>
+                  <td *ngIf="isDocente && faltasPorUsuario[usuario.id]"> {{faltasPorUsuario[usuario.id].faltas.length}} </td>
+                  <td *ngIf="isDocente && !faltasPorUsuario[usuario.id]"> 0</td>
                   <td *ngIf="!isDocente">{{ usuario.fechaNacimiento?.toDate() | date: 'dd/MM/yyyy' }}</td>
                   <td *ngIf="isDocente">
                     <input
