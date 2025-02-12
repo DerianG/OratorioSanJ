@@ -1,15 +1,16 @@
 import { Component,inject,OnInit } from '@angular/core';
 import { AuthService } from './general/data-access/auth.service';
 import { DatosFireService } from './general/data-access/datos-fire.service';
+import { AlertService } from './general/data-access/alert.service';
 import { RouterOutlet,RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';  
 import { Timestamp } from 'firebase/firestore';
 import { Subscription } from 'rxjs';
-
+import { AlertasComponent } from './general/utils/alertas/alertas.component';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, AlertasComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
   
@@ -23,7 +24,10 @@ export class AppComponent implements OnInit{
   private datosService = inject(DatosFireService)
   private authService = inject(AuthService);
   private router = inject(Router);
-
+  constructor(   public alertaService: AlertService) {
+    // Verificar si el usuario ya está logueado, en ese caso redirigirlo
+    
+  }
   ngOnInit(): void {
     // Suscribirse al estado de autenticación
     this.subscription = this.authService.authState$.subscribe(user => {
@@ -69,6 +73,12 @@ export class AppComponent implements OnInit{
   // Método para cerrar sesión
   logout(): void {
     this.authService.logout().then(() => {
+      this.mostrarAlertaDeExito(`sesion cerrada`)
+      setTimeout(() => {
+        this.router.navigate(['']);  // Redirige a la página de dashboard
+      }, 1000); // Se oculta después de 5 segundos
+     
+     
       this.router.navigate(['']);  // Redirigir al home o página deseada después de cerrar sesión
     }).catch((error) => {
       console.error('Error al cerrar sesión:', error);
@@ -77,5 +87,49 @@ export class AppComponent implements OnInit{
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();  // Limpiar la suscripción cuando el componente se destruye
+  }
+
+  mostrarAlertaDeAdvertencia(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'warning',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Advertencia: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeExito(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'success',  // Tipo de alerta de éxito
+      'Éxito: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeError(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta de error
+      'Error: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeConfirmacion(mensaje: string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Confirmación: ',
+      true, // Es una alerta de confirmación
+      () => {
+        console.log('Acción confirmada');
+        // Realiza la acción de eliminación aquí
+      },
+      () => {
+        console.log('Acción cancelada');
+        // Acción de cancelación
+      }
+    );
   }
 }

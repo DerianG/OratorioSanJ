@@ -7,7 +7,7 @@
         {{ mostrarForm ? 'Cancelar' : (modoEdicion ? 'Modificar Matricula' : 'Crear Matricula') }}
     </button>
     </div>
-
+    <app-alertas *ngIf="alertaService.alerta.message"></app-alertas>
     <!-- card del frmulario -->
     <div class="card shadow-sm" *ngIf="mostrarForm">
         <div class="card-header text-center bg-primary text-white">

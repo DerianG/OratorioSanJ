@@ -1,5 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" data-bs-theme-="dark">
   <div class="container-fluid ps-5 pe-5" >
+    <app-alertas *ngIf="alertaService.alerta.message"></app-alertas>
     <a class="navbar-brand" routerLink="" >
       <img src="icon.png" alt="Logo" width="40" height="45" class="d-inline-block align-text-botton">
       Oratorio SanJose

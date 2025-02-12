@@ -55,6 +55,9 @@
           </div>
         </div>
       </div>
+
+
+      <app-alertas *ngIf="alertaService.alerta.message"></app-alertas>
  <!-- Detalles del usuario con tabla de faltas -->
       <div *ngIf="verDetalle == true" class="row justify-content-between mt-4 mb-4 bg-dark">
         <div class="container-fluid">

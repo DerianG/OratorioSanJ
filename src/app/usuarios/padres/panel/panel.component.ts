@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { DatosFireService } from '../../../general/data-access/datos-fire.service';
 import { AuthService } from '../../../general/data-access/auth.service';
+import { AlertService } from '../../../general/data-access/alert.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators , FormGroup} from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { jsPDF }  from 'jspdf';
 import { Timestamp } from 'firebase/firestore';
-
+import { AlertasComponent } from '../../../general/utils/alertas/alertas.component';
 interface Falta {
   fecha: Date;
   estadoFalta:any;
@@ -15,7 +16,7 @@ interface Falta {
 @Component({
   selector: 'app-panel',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule, FormsModule ],
+  imports: [CommonModule,ReactiveFormsModule, FormsModule, AlertasComponent ],
   templateUrl: './panel.component.html',
   styles: ``
 })
@@ -45,7 +46,8 @@ export  default class PanelComponent {
     constructor(
         private fb: FormBuilder,
         private authService: AuthService,
-        private datosFireService: DatosFireService
+        private datosFireService: DatosFireService,
+        public alertaService: AlertService
     ){ this.form = this.fb.group({
       periodo: ['', Validators.required],
       nivel: ['', Validators.required],
@@ -325,7 +327,7 @@ export  default class PanelComponent {
               }
         
               await this.datosFireService.solicitarJustificacion(justificacionData, archivo);
-              window.alert('Justificación enviada correctamente ');
+              this.mostrarAlertaDeExito('Justificación enviada correctamente ');
            
         
               // Recargar faltas después de enviar la justificación
@@ -351,7 +353,7 @@ export  default class PanelComponent {
               this.form.reset();
               this.verJustificacion = false;
             } catch (error) {
-              window.alert('Error al enviar la justificación');
+              this.mostrarAlertaDeError('Error al enviar la justificación');
               console.error('Error al enviar la justificación:', error);
             }
           } else {
@@ -445,6 +447,51 @@ export  default class PanelComponent {
   ngOnDestroy(): void {
     this.subscription.unsubscribe();  // Limpiar la suscripción cuando el componente se destruye
   }
+
+  mostrarAlertaDeAdvertencia(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'warning',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Advertencia: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeExito(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'success',  // Tipo de alerta de éxito
+      'Éxito: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeError(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta de error
+      'Error: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeConfirmacion(mensaje: string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Confirmación: ',
+      true, // Es una alerta de confirmación
+      () => {
+        console.log('Acción confirmada');
+        // Realiza la acción de eliminación aquí
+      },
+      () => {
+        console.log('Acción cancelada');
+        // Acción de cancelación
+      }
+    );
+  }
+  
 }
 
 

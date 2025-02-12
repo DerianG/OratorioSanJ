@@ -1,11 +1,12 @@
 import { Component , OnInit} from '@angular/core';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
 import { AuthService } from '../../../../general/data-access/auth.service';
+import { AlertService } from '../../../../general/data-access/alert.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule  ,Validators , FormGroup, FormArray  } from '@angular/forms';
 import { Timestamp } from 'firebase/firestore'; // Asegúrate de importar Timestamp
 import { Observable } from 'rxjs';
-
+import { AlertasComponent } from '../../../../general/utils/alertas/alertas.component';
 
 interface Docente {
   docenteId: string; // ID del docente
@@ -18,7 +19,7 @@ interface Falta {
 @Component({
   selector: 'app-formularioscursos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AlertasComponent],
   templateUrl: './formularioscursos.component.html',
   styles: ``
 })
@@ -60,7 +61,7 @@ export  class FormularioscursosComponent implements OnInit {
     private fb: FormBuilder,
     private datosFireService: DatosFireService,
     private authService: AuthService,
-   
+    public alertaService: AlertService
 
   ) { this.form = this.fb.group({
     docenteSeleccionado: ['', Validators.required], 
@@ -498,22 +499,22 @@ filtrarDocentes(event?: any): void {
         // Si el curso ya existe, actualizarlo
         await this.datosFireService.actualizarCursoConDocente(cursoProfesorData);
         console.log('Docente asignado correctamente al curso existente');
-        alert('Docente asignado exitosamente');
+        this.mostrarAlertaDeExito('Docente asignado exitosamente');
       } else {
         // Si el curso no existe, crearlo
         await this.datosFireService.crearCursoProfesor(cursoProfesorData);
         console.log('Curso con profesor asignado correctamente');
-        alert('Docente asignado exitosamente');
+        this.mostrarAlertaDeExito('Docente asignado exitosamente');
       }
       this.cancelarSeleccion();
       this.cargarUsuariosDocentes();
       
       
     } catch (error) {
-      console.error('Error al asignar el curso con el profesor:', error);
+      this.mostrarAlertaDeError('Error al asignar el curso con el profesor:');
     }
   } else {
-    console.error('Faltan datos para asignar el curso con el profesor.');
+    this.mostrarAlertaDeError('Faltan datos para asignar el curso con el profesor.');
   }
 }
 
@@ -535,7 +536,7 @@ async quitarDocente(id: string): Promise<void> {
     // Llamamos al servicio para eliminar al docente del curso
     await this.datosFireService.quitarDocenteDelCurso(id, this.periodoSeleccionado.id, this.nivelSeleccionado.id, this.paraleloSeleccionado.id);
     console.log('Docente eliminado exitosamente');
-    alert('Docente eliminado exitosamente');
+    this.mostrarAlertaDeExito('Docente eliminado exitosamente');
    
     this.cargarUsuariosDocentes();
   } catch (error) {
@@ -555,7 +556,7 @@ async guardarAsistencia(): Promise<void> {
     }));
       // Verificar que la data no tenga valores nulos o undefined
       if (asistenciaData.some(a => !a.alumnoId || !a.alumnoNombre)) {
-        alert("Hay datos faltantes en la asistencia.");
+        this.mostrarAlertaDeAdvertencia("Hay datos faltantes en la asistencia.");
         return;
       }
 
@@ -577,7 +578,7 @@ async guardarAsistencia(): Promise<void> {
         } else {
           await this.datosFireService.inicializarAsistenciasCurso(cursoExistente.id, [registroAsistencia]);
         }
-        alert('Asistencia guardada exitosamente');
+        this.mostrarAlertaDeExito('Asistencia guardada exitosamente');
         this.verificarDisponibilidadAsistencia(); // Re-verificar la disponibilidad para el siguiente día
         await this.cargarUsuariosAlumnos();  // Recarga los usuarios y actualiza la tabla
         // Filtrar usuarios con asistencia `false`
@@ -591,7 +592,7 @@ async guardarAsistencia(): Promise<void> {
             // const mensaje = `Estimado/a ${usuario.alumnoNombre},\n\nSe ha registrado que no has marcado tu asistencia. Por favor, verifica tu estado.\n\nSaludos.`;
             // const email = usuario.alumnoEmail
             const nombresUsuariosConFalta = usuariosConAsistenciaFalse.map(usuario => usuario.alumnoNombre).join('\n');
-            alert(`Usuarios con falta:\n${nombresUsuariosConFalta}`);
+            this.mostrarAlertaDeExito(`Usuarios con falta:\n${nombresUsuariosConFalta}`);
                      
           }
         }
@@ -610,10 +611,10 @@ async guardarAsistencia(): Promise<void> {
       // }
     } catch (error) {
       console.error('Error al guardar la asistencia:', error);
-      alert('Error al guardar la asistencia');
+      this.mostrarAlertaDeError('Error al guardar la asistencia');
     }
   } else {
-    alert('Por favor, selecciona todos los campos requeridos.');
+    this.mostrarAlertaDeAdvertencia('Por favor, selecciona todos los campos requeridos.');
   }
 }
 
@@ -726,6 +727,48 @@ async getFaltasDelAlumno(usuario: any): Promise<number> {
   }
 }
 
+mostrarAlertaDeAdvertencia(mensaje:string): void {
+  this.alertaService.mostrarAlerta(
+    mensaje,
+    'warning',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+    'Advertencia: ',
+    false // No es una alerta de confirmación
+  );
+}
 
+mostrarAlertaDeExito(mensaje:string): void {
+  this.alertaService.mostrarAlerta(
+    mensaje,
+    'success',  // Tipo de alerta de éxito
+    'Éxito: ',
+    false // No es una alerta de confirmación
+  );
+}
+
+mostrarAlertaDeError(mensaje:string): void {
+  this.alertaService.mostrarAlerta(
+    mensaje,
+    'danger',  // Tipo de alerta de error
+    'Error: ',
+    false // No es una alerta de confirmación
+  );
+}
+
+mostrarAlertaDeConfirmacion(mensaje: string): void {
+  this.alertaService.mostrarAlerta(
+    mensaje,
+    'danger',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+    'Confirmación: ',
+    true, // Es una alerta de confirmación
+    () => {
+      console.log('Acción confirmada');
+      // Realiza la acción de eliminación aquí
+    },
+    () => {
+      console.log('Acción cancelada');
+      // Acción de cancelación
+    }
+  );
+}
 
 }

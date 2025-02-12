@@ -284,7 +284,7 @@ async submit(): Promise<void> {
     this.alertaService.mostrarAlerta(
       `¿Estás seguro de que deseas eliminar el período "${nombre}"?`,
       'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
-      'Confirmación', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+      'Confirmación: ', // Tipo de alerta (puedes cambiar esto si lo prefieres)
       true, // Esto indica que es una alerta de confirmación
       () => {
         // Acción confirmada
@@ -293,14 +293,14 @@ async submit(): Promise<void> {
           this.alertaService.mostrarAlerta(
             'Período eliminado con éxito.',
             'success',
-            'Éxito'
+            'Éxito: '
           );
         }).catch((error) => {
           console.error('Error al eliminar el período:', error);
           this.alertaService.mostrarAlerta(
             'Hubo un error al intentar eliminar el período.',
             'danger',
-            'Error'
+            'Error: '
           );
         });
       },
@@ -310,7 +310,7 @@ async submit(): Promise<void> {
         this.alertaService.mostrarAlerta(
           'La eliminación del período fue cancelada.',
           'warning',
-          'Advertencia'
+          'Advertencia: '
         );
       }
     );

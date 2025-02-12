@@ -22,7 +22,7 @@
           }">
           {{ periodo.nombre }}
         </button>
-
+        <app-alertas *ngIf="alertaService.alerta.message"></app-alertas>
 
         <!-- Lista de Niveles del Período Seleccionado -->
         <div *ngIf="periodoSeleccionado?.id === periodo.id && nivelesVisible && niveles.length > 0"

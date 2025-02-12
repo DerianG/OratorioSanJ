@@ -1,12 +1,14 @@
 import { Component } from '@angular/core';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
 import { AuthService } from '../../../../general/data-access/auth.service';
+import { AlertService } from '../../../../general/data-access/alert.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators , FormGroup} from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { log } from 'firebase-functions/logger';
 import { Timestamp } from 'firebase/firestore';
 import { jsPDF }  from 'jspdf';
+import { AlertasComponent } from '../../../../general/utils/alertas/alertas.component';
 interface Falta {
   fecha: Date;
   estadoAsistencia:any;
@@ -14,7 +16,7 @@ interface Falta {
 @Component({
   selector: 'app-formulariojustificaciones',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule, FormsModule ],
+  imports: [CommonModule,ReactiveFormsModule, FormsModule, AlertasComponent],
   templateUrl: './formulariojustificaciones.component.html',
   styles: ``
 })
@@ -30,7 +32,7 @@ export class FormulariojustificacionesComponent {
   constructor(
     private datosFire: DatosFireService,
     private authService: AuthService,
-   
+    public alertaService: AlertService
   ) {}
   ngOnInit(): void {
     this.loadJustificaciones();
@@ -96,21 +98,32 @@ export class FormulariojustificacionesComponent {
     link.click();
   }
 
+
+  confirmacionJustificar(justificacion: any){
+    // Mostrar alerta de confirmación
+   this.alertaService.mostrarAlerta(
+      `¿Estás seguro de que deseas justificar esta falta?`,
+      'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
+      'Confirmación: ', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+      true, // Esto indica que es una alerta de confirmación
+      () => {
+         this.justificar(justificacion)
+      },
+      () => {
+        console.log('Justificación cancelada');
+        return;
+      }
+    );
+  }
   // Método para justificar la falta
   async justificar(justificacion: any): Promise<void> {
-    const confirmar = window.confirm('¿Estás seguro de que deseas justificar esta falta?');
-  
-    if (!confirmar) {
-      console.log('Justificación cancelada');
-      return;
-    }
-  
+   
     try {
       // Justificar la falta
       await this.datosFire.justificarFalta(justificacion.id);
       console.log('Falta justificada correctamente');
      
-      window.alert('Falta justificada correctamente');
+      this.mostrarAlertaDeExito('Falta justificada correctamente');
   
       // Obtener los cursos del profesor
       const cursos = await this.datosFire.getCursoProfesor();
@@ -187,14 +200,22 @@ export class FormulariojustificacionesComponent {
         await this.datosFire.actualizarAsistenciaCurso(cursoExistente.id, cursoExistente.asistencias);
         console.log('Estado de la falta actualizado a "Justificado".');
       }
-  
-      // Recargar las justificaciones
-      this.loadJustificaciones();
-      if (confirm('¿Deseas generar un PDF con el reporte de esta justificacion?')) {
+
+       // Mostrar alerta de confirmación
+    this.alertaService.mostrarAlerta(
+      `¿Deseas generar un PDF con el reporte de esta justificacion?`,
+      'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
+      'Confirmación: ', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+      true, // Esto indica que es una alerta de confirmación
+      () => {
         this.generarReporteJustificacion(justificacion);
+      },
+      () => {
+        // Acción cancelada (si el usuario cancela la eliminación
       }
+    );
     } catch (error) {
-      window.alert('Error al justificar la falta');
+      this.mostrarAlertaDeError('Error al justificar la falta');
       console.error('Error al justificar la falta:', error);
     }
   }
@@ -400,6 +421,52 @@ export class FormulariojustificacionesComponent {
     doc.save(`reporte_justificacion_${alumnoData.nombre}.pdf`);
   }
   
+  
+
+
+  mostrarAlertaDeAdvertencia(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'warning',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Advertencia: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeExito(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'success',  // Tipo de alerta de éxito
+      'Éxito: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeError(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta de error
+      'Error: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeConfirmacion(mensaje: string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Confirmación: ',
+      true, // Es una alerta de confirmación
+      () => {
+        console.log('Acción confirmada');
+        // Realiza la acción de eliminación aquí
+      },
+      () => {
+        console.log('Acción cancelada');
+        // Acción de cancelación
+      }
+    );
+  }
   
 }
 

@@ -4,6 +4,7 @@
         <div class="card-header text-center bg-primary text-white">
             <h4>Lista de justificaciones</h4>
         </div>
+        <app-alertas *ngIf="alertaService.alerta.message"></app-alertas>
         <div class="card-body">
             <!-- Filtros de búsqueda -->
             <div class="mb-3 d-flex justify-content-between">
@@ -73,7 +74,7 @@
                                 </button>
                             </td>
                             <td>
-                                <button (click)="justificar(justificacion)" class="btn btn-warning">
+                                <button (click)="confirmacionJustificar(justificacion)" class="btn btn-warning">
                                    Justificar
                                 </button>
                             </td>

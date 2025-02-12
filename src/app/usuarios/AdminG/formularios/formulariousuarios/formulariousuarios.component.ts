@@ -4,11 +4,13 @@ import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators 
 import { AuthService } from '../../../../general/data-access/auth.service';
 import { isRequired,  matchPasswords } from '../../../../general/utils/validator';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
+import { AlertService } from '../../../../general/data-access/alert.service';
 import { Timestamp } from '@angular/fire/firestore';
+import { AlertasComponent } from '../../../../general/utils/alertas/alertas.component';
 @Component({
   selector: 'app-formulariousuarios',
   standalone: true,
-  imports: [FormsModule,ReactiveFormsModule,CommonModule],
+  imports: [FormsModule,ReactiveFormsModule,CommonModule, AlertasComponent],
   templateUrl: './formulariousuarios.component.html',
   styles: ``
 })
@@ -34,7 +36,8 @@ export default class FormulariousuariosComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private datosFireService: DatosFireService
+    private datosFireService: DatosFireService,
+    public alertaService: AlertService
   )  {
   this.form = this.fb.group({
     nombre: ['', Validators.required],
@@ -267,21 +270,56 @@ setConditionalValidators() {
     }
   }
   // Eliminar usuario
-  async eliminarUsuario(userId: string) {
-    const confirmacion = confirm("¿Estás seguro de que deseas eliminar este usuario?");
-    if (confirmacion) {
-      try {
-        await this.authService.eliminarUsuario(userId);
-        alert('Usuario eliminado exitosamente');
-        this.cargarUsuarios();
-      } catch (error) {
-        console.error('Error al eliminar el usuario', error);
-        alert('Error al eliminar el usuario');
-      }
-    }
-  }
+  // async eliminarUsuario(userId: string) {
+  //   const confirmacion = confirm("¿Estás seguro de que deseas eliminar este usuario?");
+  //   if (confirmacion) {
+  //     try {
+  //       await this.authService.eliminarUsuario(userId);
+  //       alert('Usuario eliminado exitosamente');
+  //       this.cargarUsuarios();
+  //     } catch (error) {
+  //       console.error('Error al eliminar el usuario', error);
+  //       alert('Error al eliminar el usuario');
+  //     }
+  //   }
+  // }
 
- 
+  eliminarUsuario(id: string): void {
+    // Mostrar alerta de confirmación
+    this.alertaService.mostrarAlerta(
+      `¿Estás seguro de que deseas eliminar el usuario?`,
+      'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
+      'Confirmación: ', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+      true, // Esto indica que es una alerta de confirmación
+      () => {
+        // Acción confirmada
+        this.authService.eliminarUsuario(id).then(() => {
+          this.cargarUsuarios();
+          this.alertaService.mostrarAlerta(
+            'usuario eliminado con éxito.',
+            'success',
+            'Éxito: '
+          );
+        }).catch((error) => {
+          console.error('Error al eliminar el usuario:', error);
+          this.alertaService.mostrarAlerta(
+            'Hubo un error al intentar eliminar el usuario.',
+            'danger',
+            'Error: '
+          );
+        });
+      },
+      () => {
+        // Acción cancelada (si el usuario cancela la eliminación)
+        console.log('Eliminación cancelada');
+        this.alertaService.mostrarAlerta(
+          'La eliminación del usuario fue cancelada.',
+          'warning',
+          'Advertencia: '
+        );
+      }
+    );
+  }
 
   async submit() {
     if (this.form.valid) {
@@ -322,15 +360,15 @@ setConditionalValidators() {
             );
     
             if (resultado) {
-              alert('Usuario actualizado exitosamente');
+              this.mostrarAlertaDeExito('Usuario actualizado exitosamente');
               this.resetForm();
               this.cargarUsuarios();
             } else {
-              alert('Error al actualizar el usuario.');
+              this.mostrarAlertaDeError('Error al actualizar el usuario.');
             }
           } catch (error) {
             console.error('Error al actualizar usuario', error);
-            alert('Error al actualizar usuario');
+            this.mostrarAlertaDeError('Error al actualizar usuario');
           }
       
       } else {
@@ -346,7 +384,7 @@ setConditionalValidators() {
               // Si el correo existe, mostrar el mensaje de error
               if (emailExistente) {
                 this.emailExiste = true;
-                alert('El correo electrónico del alumno ya está registrado.');
+                this.mostrarAlertaDeAdvertencia('El correo electrónico del alumno ya está registrado.');
                 return;
               }
               
@@ -360,7 +398,7 @@ setConditionalValidators() {
           // Si el correo existe, mostrar el mensaje de error
           if (emailExistente) {
             this.emailExiste = true;
-            alert('El correo electrónico ya está registrado.');
+            this.mostrarAlertaDeAdvertencia('El correo electrónico ya está registrado.');
             return;
            }
          }
@@ -373,7 +411,7 @@ setConditionalValidators() {
           // Si el correo existe, mostrar el mensaje de error
           if (cedulaexistente) {
             this.cedulaExiste= true;
-            alert('Cedula ya registrada.');
+            this.mostrarAlertaDeAdvertencia('Cedula ya registrada.');
             return;
           }
         try {
@@ -393,19 +431,19 @@ setConditionalValidators() {
           );
   
           if (resultado) {
-            alert('Usuario registrado exitosamente');
+            this.mostrarAlertaDeExito('Usuario registrado exitosamente');
             this.resetForm();
             this.cargarUsuarios();
           } else {
-            alert('Error al registrar usuario');
+            this.mostrarAlertaDeError('Error al registrar usuario');
           }
         } catch (error) {
           console.error('Error al registrar usuario', error);
-          alert('Error al registrar usuario');
+          this.mostrarAlertaDeError('Error al registrar usuario');
         }
       }
     } else {
-      alert('Por favor, complete todos los campos correctamente.');
+      this.mostrarAlertaDeAdvertencia('Por favor, completa correctamente todos los campos.');
     }
   }
   
@@ -516,6 +554,51 @@ resetForm(): void {
 
   get isRequiredConfirmPassword() {
     return this.form.get('confirmContraseña')?.hasError('required') && this.form.get('confirmContraseña')?.touched;
+  }
+
+  
+  mostrarAlertaDeAdvertencia(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'warning',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Advertencia: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeExito(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'success',  // Tipo de alerta de éxito
+      'Éxito: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeError(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta de error
+      'Error: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeConfirmacion(mensaje: string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Confirmación: ',
+      true, // Es una alerta de confirmación
+      () => {
+        console.log('Acción confirmada');
+        // Realiza la acción de eliminación aquí
+      },
+      () => {
+        console.log('Acción cancelada');
+        // Acción de cancelación
+      }
+    );
   }
 
 }

@@ -2,14 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../../general/data-access/auth.service';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
+import { AlertService } from '../../../../general/data-access/alert.service';
 import { Timestamp } from '@angular/fire/firestore';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators , FormGroup} from '@angular/forms';
 import { jsPDF }  from 'jspdf';
-
+import { AlertasComponent } from '../../../../general/utils/alertas/alertas.component';
 @Component({
   selector: 'app-formulariosmatriculas',
   standalone: true,
-  imports: [FormsModule,ReactiveFormsModule,CommonModule],
+  imports: [FormsModule,ReactiveFormsModule,CommonModule, AlertasComponent],
   templateUrl: './formulariosmatriculas.component.html',
   styles: ``
 })
@@ -47,7 +48,9 @@ export class FormulariosmatriculasComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private datosFireService: DatosFireService
+    private datosFireService: DatosFireService,
+    public alertaService: AlertService,
+
   ) { this.form = this.fb.group({
     periodoSeleccionado: ['', Validators.required],  // Añadir el control para 'periodoSeleccionado'
     nivelSeleccionado: ['', Validators.required] ,   // Añadir el control para 'nivelSeleccionado'
@@ -335,19 +338,40 @@ mostrarFormulario(): void {
  
   
   async eliminarMatricula(id: string): Promise<void> {
-    const confirmar = confirm('¿Estás seguro de que deseas eliminar esta matrícula?');
-    if (!confirmar) {
-      return; // Cancela la operación si el usuario no confirma
-    }
-  
-    try {
-      await this.datosFireService.eliminarMatricula(id);
-      alert('Matrícula eliminada exitosamente');
-      this.cargarMatriculas(); // Recargar la lista después de eliminar
-    } catch (error) {
-      console.error('Error al eliminar la matrícula:', error);
-      alert('Ocurrió un error al eliminar la matrícula');
-    }
+    this.alertaService.mostrarAlerta(
+      `¿Estás seguro de que deseas eliminar esta matricula?`,
+      'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
+      'Confirmación: ', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+      true, // Esto indica que es una alerta de confirmación
+      () => {
+        // Acción confirmada
+        this.datosFireService.eliminarMatricula(id).then(() => {
+          this.cargarMatriculas();
+          this.alertaService.mostrarAlerta(
+            'matricula eliminada con éxito.',
+            'success',
+            'Éxito: '
+          );
+        }).catch((error) => {
+          console.error('Error al eliminar el período:', error);
+          this.alertaService.mostrarAlerta(
+            'Hubo un error al intentar eliminar la matricula .',
+            'danger',
+            'Error: '
+          );
+        });
+      },
+      () => {
+        // Acción cancelada (si el usuario cancela la eliminación)
+        console.log('Eliminación cancelada');
+        this.alertaService.mostrarAlerta(
+          'La eliminación de la matricula fue cancelada.',
+          'warning',
+          'Advertencia: '
+        );
+      }
+    );
+    
   }
 
 // En el método de edición o al cargar los datos
@@ -422,7 +446,7 @@ async editarMatricula(matriculaId: string) {
       console.log('Fecha:', this.form.get('fechaMatricula')?.value);
       console.log('Alumno:', this.form.get('alumnoSeleccionado')?.value);
     } else {
-      alert('Periodo no encontrado');
+      this.mostrarAlertaDeAdvertencia('Periodo no encontrado');
     }
   } catch (error) {
     console.error('Error al editar matrícula:', error);
@@ -438,7 +462,7 @@ async generarReporte(matriculaId: string) {
     const matricula = matriculas.find(m => m.id === matriculaId);
    
     if (!matricula) {
-      alert('Matrícula no encontrada.');
+      this.mostrarAlertaDeAdvertencia('Matrícula no encontrada.');
       return;
     }
 
@@ -499,7 +523,7 @@ async generarReporte(matriculaId: string) {
   
 async submit() {
   if (!this.periodoSeleccionado || !this.nivelSeleccionado || !this.paraleloSeleccionado) {
-    alert('Por favor, asegúrate de haber seleccionado un período, nivel y paralelo.');
+    this.mostrarAlertaDeAdvertencia('Por favor, asegúrate de haber seleccionado un período, nivel y paralelo.');
     return;
   }
 
@@ -522,11 +546,21 @@ async submit() {
         };
           // Actualizar matrícula existente
           await this.datosFireService.actualizarMatricula(matriculaData);
-          alert('Matrícula actualizada exitosamente');
+          this.mostrarAlertaDeExito('Matrícula actualizada exitosamente');
            // Mostrar opción de generar PDF
-           if (confirm('¿Deseas generar un PDF con el reporte de esta matrícula?')) {
-            this.generarPDF(matriculaData);
-          }
+            // Mostrar alerta de confirmación
+            this.alertaService.mostrarAlerta(
+              `¿Deseas generar un PDF con el reporte de esta matrícula?`,
+              'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
+              'Confirmación: ', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+              true, // Esto indica que es una alerta de confirmación
+              () => {
+                this.generarPDF(matriculaData);
+              },
+              () => {
+                // Acción cancelada (si el usuario cancela la eliminación
+              }
+            );
 
       }else {
         const matriculaData = {
@@ -543,19 +577,26 @@ async submit() {
         };
         const esUnica = await this.datosFireService.validarMatriculaUnica(matriculaData);
         if (!esUnica) {
-          alert('El alumno ya está matriculado en este período.');
+          this.mostrarAlertaDeError('El alumno ya está matriculado en este período.');
           return;
         }
    
         await this.datosFireService.crearMatricula(matriculaData);
-        alert('Matrícula guardada exitosamente');
+        this.mostrarAlertaDeExito('Matrícula guardada exitosamente');
 
-
-          // Mostrar opción de generar PDF
-          if (confirm('¿Deseas generar un PDF con el reporte de esta matrícula?')) {
-            this.generarPDF(matriculaData);
-          }
-         
+           // Mostrar alerta de confirmación
+            this.alertaService.mostrarAlerta(
+              `¿Deseas generar un PDF con el reporte de esta matrícula?`,
+              'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
+              'Confirmación: ', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+              true, // Esto indica que es una alerta de confirmación
+              () => {
+                this.generarPDF(matriculaData);
+              },
+              () => {
+                // Acción cancelada (si el usuario cancela la eliminación
+              }
+            );
         this.cargarMatriculas();
         this.form.reset();
         this.alumnoSeleccionado = null;
@@ -568,7 +609,7 @@ async submit() {
         this.mostrarForm = false; // Oculta el formulario
       } catch (error) {
         console.error('Error al guardar la matrícula:', error);
-        alert('Ocurrió un error al guardar la matrícula');
+        this.mostrarAlertaDeError('Ocurrió un error al guardar la matrícula');
      
       }
   }else {
@@ -639,4 +680,49 @@ Matriculado por: ${usuarioNombreCompleto}`;
   this.resetForm(); // Reinicia el formulario
 }
 
+
+  mostrarAlertaDeAdvertencia(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'warning',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Advertencia: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeExito(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'success',  // Tipo de alerta de éxito
+      'Éxito: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeError(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta de error
+      'Error: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeConfirmacion(mensaje: string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Confirmación: ',
+      true, // Es una alerta de confirmación
+      () => {
+        console.log('Acción confirmada');
+        // Realiza la acción de eliminación aquí
+      },
+      () => {
+        console.log('Acción cancelada');
+        // Acción de cancelación
+      }
+    );
+  }
+  
 }
