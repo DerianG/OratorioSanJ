@@ -665,54 +665,67 @@ async getFaltasDelAlumno(usuario: any): Promise<number> {
       curso.paraleloId === this.paraleloSeleccionado.id
     );
 
-    if (cursoExistente && cursoExistente.asistencias) {
-      // Inicializar el objeto si no existe
+    // Si no encontramos el curso o no tiene asistencias, asignamos valores predeterminados
+    if (!cursoExistente || !cursoExistente.asistencias) {
       if (!this.faltasPorUsuario[usuario.id]) {
-        this.faltasPorUsuario[usuario.id] = { faltas: [], estadoFalta: '' };
+        this.faltasPorUsuario[usuario.id] = { faltas: [], estadoFalta: 'aprobado' };
       }
-      // Filtrar las faltas de acuerdo con el alumno
-      const faltasDeMatricula = cursoExistente.asistencias
-        .filter((asistencia: any) =>
-          asistencia.alumnos.some((alumno: any) =>
-            alumno.alumnoId === usuario.id && !alumno.estadoAsistencia
-          )
-        )
-        .map((asistencia: any) => {
-          const alumno = asistencia.alumnos.find((al: any) => al.alumnoId === usuario.id);
-          return {
-            fecha: asistencia.fechaAsistencia.toDate(),
-            estadoFalta: alumno?.estadoFalta || 'Pendiente', // Agrega estado de falta
-          };
-        });
-      this.faltasPorUsuario[usuario.id].faltas = faltasDeMatricula;
-      // Obtener el número de faltas
-      const cantidadFaltas = faltasDeMatricula.length;
-
-      // Actualizar el campo estadoFaltas según la cantidad de faltas
-      let estadoFaltas = '';
-      if (cantidadFaltas === 0) {
-        estadoFaltas = 'aprobado';
-      } else if (cantidadFaltas > 0 && cantidadFaltas < 3) {
-        estadoFaltas = 'advertido';
-      } else if (cantidadFaltas >= 3) {
-        estadoFaltas = 'reprobado';
-      }
-
-      // Actualizar el campo estadoFaltas en el usuario
-       
-       await this.authService.actualizarUsuarioId(usuario.id, estadoFaltas);
-       this.faltasPorUsuario[usuario.id].estadoFalta = estadoFaltas
-
-      // Retornamos la cantidad de faltas
-      return cantidadFaltas;
+      // Si no hay faltas, asignamos la cantidad de faltas a 0
+      this.faltasPorUsuario[usuario.id].faltas = [];
+      this.faltasPorUsuario[usuario.id].estadoFalta = 'aprobado';
+      return 0; // Si no hay faltas, retornamos 0
     }
 
-    return 0; // Si no hay faltas
+    // Si el curso existe y tiene asistencias, procesamos las faltas
+    if (!this.faltasPorUsuario[usuario.id]) {
+      this.faltasPorUsuario[usuario.id] = { faltas: [], estadoFalta: 'aprobado' };
+    }
+
+    // Filtrar las faltas de acuerdo con el alumno
+    const faltasDeMatricula = cursoExistente.asistencias
+      .filter((asistencia: any) =>
+        asistencia.alumnos.some((alumno: any) =>
+          alumno.alumnoId === usuario.id && !alumno.estadoAsistencia
+        )
+      )
+      .map((asistencia: any) => {
+        const alumno = asistencia.alumnos.find((al: any) => al.alumnoId === usuario.id);
+        return {
+          fecha: asistencia.fechaAsistencia.toDate(),
+          estadoFalta: alumno?.estadoFalta || 'Pendiente', // Asignamos 'Pendiente' si no tiene estadoFalta
+        };
+      });
+
+    // Asignamos las faltas al usuario
+    this.faltasPorUsuario[usuario.id].faltas = faltasDeMatricula;
+
+    // Obtener el número de faltas
+    const cantidadFaltas = faltasDeMatricula.length;
+
+    // Actualizamos el estado de faltas según la cantidad de faltas
+    let estadoFaltas = '';
+    if (cantidadFaltas === 0) {
+      estadoFaltas = 'aprobado';
+    } else if (cantidadFaltas > 0 && cantidadFaltas < 3) {
+      estadoFaltas = 'advertido';
+    } else if (cantidadFaltas >= 3) {
+      estadoFaltas = 'reprobado';
+    }
+
+    // Actualizamos el estadoFaltas en el objeto faltasPorUsuario
+    this.faltasPorUsuario[usuario.id].estadoFalta = estadoFaltas;
+
+    // Actualizamos el estadoFaltas en la base de datos
+    await this.authService.actualizarUsuarioId(usuario.id, estadoFaltas);
+
+    // Retornamos la cantidad de faltas
+    return cantidadFaltas;
   } catch (error) {
     console.error('Error al obtener las faltas del alumno:', error);
     return 0;
   }
 }
+
 
 
 }

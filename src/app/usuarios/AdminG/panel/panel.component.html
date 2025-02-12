@@ -6,7 +6,7 @@
       <!-- Menú de botones -->
       <div class="d-flex flex-row flex-wrap justify-content-between gap-3 ">
         <!-- Periodos -->
-        <div class="flex-grow-1 mt-4">
+        <div class="flex-grow-1 mt-4 mb-3">
           <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('periodos')">
             <img src="periodosIcon.png" class="img-fluid mb-2" width="80" alt="Periodos">
             <div>Periodos</div>
@@ -14,7 +14,7 @@
         </div>
       
         <!-- Usuarios -->
-        <div class="flex-grow-1 mt-4">
+        <div class="flex-grow-1 mt-4 mb-3">
           <button type="button" class="btn btn-warning w-100 text-center py-3" (click)="cambiarVista('usuarios')">
             <img src="usuario.png" class="img-fluid mb-2" width="80" alt="Usuario">
             <div>Usuario</div>
@@ -22,7 +22,7 @@
         </div>
       
         <!-- Matrículas -->
-        <div class="flex-grow-1 mt-4">
+        <div class="flex-grow-1 mt-4 mb-3">
           <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('matricula')">
             <img src="matricula.png" class="img-fluid mb-2" width="80" alt="Matriculas">
             <div>Matriculas</div>
@@ -30,7 +30,7 @@
         </div>
       
         <!-- Cursos -->
-        <div class="flex-grow-1 mt-4">
+        <div class="flex-grow-1 mt-4 mb-3">
           <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('cursos')">
             <img src="cursos.png" class="img-fluid mb-2" width="80" alt="Cursos">
             <div>Cursos</div>
@@ -38,7 +38,7 @@
         </div>
         
          <!-- justificacion -->
-         <div class="flex-grow-1 mt-4">
+         <div class="flex-grow-1 mt-4 mb-3">
           <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('justificacion')">
             <img src="justificacion.png" class="img-fluid mb-2" width="80" alt="justificaciones">
             <div>Justificaciones</div>
@@ -46,7 +46,7 @@
         </div>
       
         <!-- Configuración -->
-        <div class="flex-grow-1 mt-4">
+        <div class="flex-grow-1 mt-4 mb-3">
           <button type="button" class="btn btn-primary w-100 text-center py-3" (click)="cambiarVista('configuracion')">
             <img src="configuracion.png" class="img-fluid mb-2" width="80" alt="Configuración">
             <div>Configuración</div>
@@ -58,7 +58,7 @@
       <!-- Contenido dinámico del formulario -->
       <div class="row justify-content-between">
         <div class="container-fluid">
-          <p class="text-light">Formulario</p>
+        
           <div class="container-fluid mt-2 mb-2">
             <!-- Mostrar el formulario solo si la vista seleccionada es "usuarios" -->
             <div *ngIf="vistaSeleccionada === 'usuarios'">

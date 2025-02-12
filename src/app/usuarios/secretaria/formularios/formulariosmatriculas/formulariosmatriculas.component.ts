@@ -606,7 +606,8 @@ generarPDF(matriculaData: any): void {
 
   // Obtener usuario actual y concatenar su nombre completo
   const usuarioActual = this.authService.getCurrentUser();
-  const usuarioNombreCompleto = `${usuarioActual.nombre} ${usuarioActual.apellido}`;
+  console.log(usuarioActual)
+  const usuarioNombreCompleto = `${usuarioActual.nombre} `;
 
   // Mensaje principal
   const fechaMatricula = matriculaData.fechaMatricula.toDate().toLocaleDateString();

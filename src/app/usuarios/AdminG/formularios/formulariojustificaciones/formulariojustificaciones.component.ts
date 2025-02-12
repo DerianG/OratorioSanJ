@@ -318,7 +318,7 @@ export class FormulariojustificacionesComponent {
     
     // Obtener usuario actual y concatenar su nombre completo
     const usuarioActual = this.authService.getCurrentUser();
-    const usuarioNombreCompleto = `${usuarioActual.nombre} ${usuarioActual.apellido}`;
+    const usuarioNombreCompleto = `${usuarioActual.nombre} `;
   
     // Obtener la fecha actual
     const fechaActual = new Date().toLocaleDateString();

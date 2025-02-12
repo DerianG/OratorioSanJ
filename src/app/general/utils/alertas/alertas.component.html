@@ -1,0 +1,22 @@
+<!-- Alerta flotante en la parte inferior derecha -->
+<div *ngIf="alertaService.alerta.message" class="alert alert-dismissible fade show" 
+     [ngClass]="alertaService.alerta.class" role="alert" 
+     style="position: fixed; bottom: 20px; right: 20px; z-index: 1050; padding: 20px 30px; font-size: 1.2rem; border-radius: 10px;">
+  
+  <!-- Título de la alerta -->
+  <strong>{{ alertaService.alerta.tipo }}</strong> {{ alertaService.alerta.message }}
+
+  <!-- Si es una alerta de confirmación, mostrar los botones -->
+  <div *ngIf="alertaService.alerta.esConfirmacion" class="d-flex justify-content-center mt-2">
+    <div class="d-inline-flex gap-2">
+      <button class="btn btn-sm btn-success" (click)="alertaService.confirmarAccion()">Confirmar</button>
+      <button class="btn btn-sm btn-danger" (click)="alertaService.cancelarAccion()">Cancelar</button>
+    </div>
+  </div>
+  
+  
+  
+
+  <!-- Botón de cierre en cualquier alerta -->
+  <button type="button" class="btn-close ms-2" (click)="alertaService.ocultarAlerta()"></button>
+</div>

@@ -8,7 +8,8 @@
             {{ mostrarForm ? 'Cancelar' : (modoEdicion ? 'Modificar Período' : 'Crear Período') }}
         </button>
     </div>
-
+    <app-alertas *ngIf="alertaService.alerta.message"></app-alertas>
+  
     <!-- Card para el Formulario -->
     <div class="card shadow-sm" *ngIf="mostrarForm">
         <div class="card-header text-center bg-primary text-white">

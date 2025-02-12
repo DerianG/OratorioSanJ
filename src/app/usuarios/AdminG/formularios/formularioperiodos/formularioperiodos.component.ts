@@ -1,12 +1,14 @@
 import { Component,OnInit,ChangeDetectorRef   } from '@angular/core';
 import { DatosFireService } from '../../../../general/data-access/datos-fire.service';
 import { AuthService } from '../../../../general/data-access/auth.service';
+import { AlertService } from '../../../../general/data-access/alert.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule  ,Validators , FormGroup, FormArray  } from '@angular/forms';
 import { Timestamp } from '@angular/fire/firestore';
 import { FormularionivelesComponent } from '../formularioniveles/formularioniveles.component';
 import { jsPDF }  from 'jspdf';
 import 'jspdf-autotable';
+import { AlertasComponent } from '../../../../general/utils/alertas/alertas.component';
 
 // Extensión de la interfaz para incluir lastAutoTable
 declare module 'jspdf' {
@@ -20,7 +22,7 @@ interface Nivel {
 @Component({
   selector: 'app-formularioperiodos',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule, FormsModule, FormularionivelesComponent],
+  imports: [CommonModule,ReactiveFormsModule, FormsModule, FormularionivelesComponent, AlertasComponent],
   templateUrl: './formularioperiodos.component.html',
   styles: ``
 })
@@ -40,10 +42,12 @@ export class FormularioperiodosComponent implements  OnInit {
   periodoId: string | null = null; // ID del período a modificar
   fechaInvalida: boolean = false;
   matriculas: any[] = []; // Aquí se guardarán las matrículas
+  alerta = { message: '', class: '', tipo: '' };  // Para las alertas
   constructor(
     private fb: FormBuilder,
     private datosFireService: DatosFireService,
     private authService: AuthService,
+    public alertaService: AlertService
   ) {
 
     this.form = this.fb.group({
@@ -193,12 +197,12 @@ mostrarFormulario(): void {
   
 async submit(): Promise<void> {
   if (this.form.invalid) {
-    window.alert('Por favor, completa correctamente todos los campos.');
-    return;
+    this.mostrarAlertaDeAdvertencia('Por favor, completa correctamente todos los campos.');
+      return;
   }
 
   if (this.nivelesSeleccionados.value.length === 0) {
-    window.alert('Debes seleccionar al menos un nivel.');
+    this.mostrarAlertaDeAdvertencia('Debes seleccionar al menos un nivel.');
     return;
   }
 
@@ -220,15 +224,15 @@ async submit(): Promise<void> {
     if (this.modoEdicion && this.periodoEditando) {
       // Actualizar el período con los niveles seleccionados
       await this.datosFireService.actualizarPeriodoConNiveles(this.periodoEditando.id, periodoData, nivelesSeleccionados);
-      window.alert('Período actualizado con éxito.');
+      this.mostrarAlertaDeExito('Período actualizado con éxito.');
     } else {
       // Crear el período con los niveles seleccionados
       await this.datosFireService.crearPeriodoConNiveles(periodoData, nivelesSeleccionados);
-      window.alert('Período creado con éxito.');
+      this.mostrarAlertaDeExito('Período creado con éxito.');
     }
   } catch (error) {
     console.error('Error al guardar el período:', error);
-    window.alert('Ocurrió un error al guardar el período.');
+    this.mostrarAlertaDeError('Ocurrió un error al guardar el período.');
   }
 
   this.cargarPeriodos();
@@ -276,16 +280,42 @@ async submit(): Promise<void> {
 
 
   eliminarPeriodo(id: string, nombre: string): void {
-    if (window.confirm(`¿Estás seguro de que deseas eliminar el período "${nombre}"?`)) {
+    // Mostrar alerta de confirmación
+    this.alertaService.mostrarAlerta(
+      `¿Estás seguro de que deseas eliminar el período "${nombre}"?`,
+      'danger', // Clase de alerta (puedes ajustar el color según tu diseño)
+      'Confirmación', // Tipo de alerta (puedes cambiar esto si lo prefieres)
+      true, // Esto indica que es una alerta de confirmación
+      () => {
+        // Acción confirmada
         this.datosFireService.eliminarPeriodo(id).then(() => {
-            this.cargarPeriodos();
-            window.alert('Período eliminado con éxito.');
+          this.cargarPeriodos();
+          this.alertaService.mostrarAlerta(
+            'Período eliminado con éxito.',
+            'success',
+            'Éxito'
+          );
         }).catch((error) => {
-            console.error('Error al eliminar el período:', error);
-            window.alert('Hubo un error al intentar eliminar el período.');
+          console.error('Error al eliminar el período:', error);
+          this.alertaService.mostrarAlerta(
+            'Hubo un error al intentar eliminar el período.',
+            'danger',
+            'Error'
+          );
         });
-    }
-}
+      },
+      () => {
+        // Acción cancelada (si el usuario cancela la eliminación)
+        console.log('Eliminación cancelada');
+        this.alertaService.mostrarAlerta(
+          'La eliminación del período fue cancelada.',
+          'warning',
+          'Advertencia'
+        );
+      }
+    );
+  }
+  
 
 
   verDetalle(periodo: any): void {
@@ -388,7 +418,7 @@ nivelesLista.forEach((nivel, index) => {
 });
 
     // Espacio adicional antes de la primera tabla
-    startY += textoDividido.length * 7 + 10; // Ajusta según el número de líneas
+    startY += textoDividido.length * 7 + 20; // Ajusta según el número de líneas
   
     try {
       const matriculasData = await this.datosFireService.getMatriculas();
@@ -478,8 +508,49 @@ nivelesLista.forEach((nivel, index) => {
   }
   
   
-  
 
-  
+  mostrarAlertaDeAdvertencia(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'warning',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Advertencia: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeExito(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'success',  // Tipo de alerta de éxito
+      'Éxito: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeError(mensaje:string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta de error
+      'Error: ',
+      false // No es una alerta de confirmación
+    );
+  }
+
+  mostrarAlertaDeConfirmacion(mensaje: string): void {
+    this.alertaService.mostrarAlerta(
+      mensaje,
+      'danger',  // Tipo de alerta: 'danger', 'success', 'warning', etc.
+      'Confirmación: ',
+      true, // Es una alerta de confirmación
+      () => {
+        console.log('Acción confirmada');
+        // Realiza la acción de eliminación aquí
+      },
+      () => {
+        console.log('Acción cancelada');
+        // Acción de cancelación
+      }
+    );
+  }
   
 }
