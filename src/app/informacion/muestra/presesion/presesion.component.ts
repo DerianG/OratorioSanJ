@@ -60,7 +60,7 @@ export default class PresesionComponent {
         this.mostrarAlertaDeExito(`ingreso correcto, bienvenido "${nombre}"`)
         setTimeout(() => {
           this.router.navigate(['']);  // Redirige a la página de dashboard
-        }, 2000); // Se oculta después de 5 segundos
+        }, 1000); // Se oculta después de 5 segundos
        
        
       } else {

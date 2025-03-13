@@ -1,7 +1,11 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" data-bs-theme-="dark">
   <div class="container-fluid ps-5 pe-5" >
     <app-alertas *ngIf="alertaService.alerta.message"></app-alertas>
+    
     <a class="navbar-brand" routerLink="" >
+      <img src="logo ULEAM.png" alt="Logo" width="130" height="60" class="d-inline-block align-text-bottom">
+    </a>
+    <a class="navbar-brand ms-4" routerLink="" >
       <img src="icon.png" alt="Logo" width="40" height="45" class="d-inline-block align-text-botton">
       Oratorio SanJose
     </a>
@@ -47,6 +51,11 @@
 
 </nav>
 <router-outlet/>
+
+<button *ngIf="showButton" class="btn-float" (click)="scrollToTop()">
+  &#8593; <!-- Flecha hacia arriba -->
+</button>
+
 <div class="card ustify-content-center m-5" >
   <div class="card-body ">   
   <nav class="navbar navbar-expand-lg bg-body-tertiary" >

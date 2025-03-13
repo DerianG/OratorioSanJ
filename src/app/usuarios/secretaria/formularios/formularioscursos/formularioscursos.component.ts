@@ -634,7 +634,7 @@ async verificarDisponibilidadAsistencia(): Promise<void> {
 
   // Calcular la diferencia de tiempo entre la última asistencia y la fecha actual
   const diferencia = fechaActual.getTime() - ultimaFechaAsistencia.getTime();
-  const horasDiferencia = 35//diferencia / (1000 * 3600); // Convertir a horas
+  const horasDiferencia = diferencia / (1000 * 3600); // Convertir a horas
 
   // Si han pasado más de 24 horas desde la última asistencia, habilitar el botón
   if (horasDiferencia >= 24) {

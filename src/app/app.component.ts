@@ -1,4 +1,4 @@
-import { Component,inject,OnInit } from '@angular/core';
+import { Component,inject,OnInit,HostListener } from '@angular/core';
 import { AuthService } from './general/data-access/auth.service';
 import { DatosFireService } from './general/data-access/datos-fire.service';
 import { AlertService } from './general/data-access/alert.service';
@@ -7,6 +7,8 @@ import { CommonModule } from '@angular/common';
 import { Timestamp } from 'firebase/firestore';
 import { Subscription } from 'rxjs';
 import { AlertasComponent } from './general/utils/alertas/alertas.component';
+import { ViewportScroller } from '@angular/common';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -24,7 +26,14 @@ export class AppComponent implements OnInit{
   private datosService = inject(DatosFireService)
   private authService = inject(AuthService);
   private router = inject(Router);
-  constructor(   public alertaService: AlertService) {
+  showButton: boolean = true; // Para controlar la visibilidad del botón
+  private scrollTimeout: any; // Para almacenar el temporizador
+
+
+  constructor(  
+     public alertaService: AlertService,
+     private viewportScroller: ViewportScroller,
+    ) {
     // Verificar si el usuario ya está logueado, en ese caso redirigirlo
     
   }
@@ -132,4 +141,25 @@ export class AppComponent implements OnInit{
       }
     );
   }
+
+  scrollToTop() {
+    this.viewportScroller.scrollToPosition([0, 0]); // Mueve la página al inicio
+  }
+
+ onWindowScroll() {
+    // Ocultar botón mientras el usuario está desplazándose
+    this.showButton = false;
+
+    // Limpiar el timeout anterior si sigue activo
+    if (this.scrollTimeout) {
+      clearTimeout(this.scrollTimeout);
+    }
+
+    // Establecer un nuevo timeout para volver a mostrar el botón después de 500ms
+    this.scrollTimeout = setTimeout(() => {
+      this.showButton = true;
+    }, 500);
+  }
+
+
 }

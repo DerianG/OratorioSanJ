@@ -1,0 +1,32 @@
+/* app.component.css */
+.btn-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(33, 37, 41, 0.7); /* Color oscuro con opacidad para hacerlo semi-transparente */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;  /* Tamaño más pequeño */
+    height: 50px; /* Igual que el width para mantener la forma circular */
+    padding: 0;   /* Elimina el padding */
+    font-size: 24px; /* Ajusta el tamaño del ícono */
+    cursor: pointer;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  }
+  
+  .btn-float:hover {
+    background-color: rgba(0, 86, 179, 0.7); /* Color de fondo semi-transparente en el hover */
+  }
+  
+  .btn-float.hidden {
+    opacity: 0;  /* Hace desaparecer el botón cuando la clase 'hidden' está activa */
+  }
+  
+  /* Opcional: Añadir sombra para darle más estilo */
+  .btn-float {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  

@@ -182,6 +182,7 @@ export class FormulariojustificacionesComponent {
   
         return fechaAsistencia === fechaFalta &&
           asistencia.alumnos.some((alumno: any) => alumno.alumnoId === justificacion.alumnoId);
+          
       });
   
       if (!asistencia) {
@@ -199,6 +200,8 @@ export class FormulariojustificacionesComponent {
   
         await this.datosFire.actualizarAsistenciaCurso(cursoExistente.id, cursoExistente.asistencias);
         console.log('Estado de la falta actualizado a "Justificado".');
+        await this.getFaltasDelAlumno(justificacion.alumnoId, cursoExistente);
+        justificacion.estado = 'Justificado';
       }
 
        // Mostrar alerta de confirmación
